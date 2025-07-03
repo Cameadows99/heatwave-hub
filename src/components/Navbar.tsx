@@ -1,6 +1,6 @@
-'use client'
-import Link from 'next/link'
-import Image from 'next/image'
+"use client";
+import Link from "next/link";
+import Image from "next/image";
 
 export default function Navbar() {
   return (
@@ -15,7 +15,6 @@ export default function Navbar() {
             className="object-contain scale-150"
           />
         </div>
-
       </Link>
 
       {/* Nav Links */}
@@ -24,16 +23,16 @@ export default function Navbar() {
         <Link href="/teams">Teams</Link>
         <Link href="/work-orders">Work Order</Link>
         <Link href="/schedule">Schedule</Link>
-        <Link href="/events">Events</Link>
+        <Link href="/calendar">Calendar</Link>
       </div>
-        <div className="relative w-30 h-10">
-          <Image
-            src="/logos/heat-sun.png"
-            alt="Sun Logo"
-            fill
-            className="object-contain scale-150"
-          />
-        </div>
+      <div className="relative w-30 h-10">
+        <Image
+          src="/logos/heat-sun.png"
+          alt="Sun Logo"
+          fill
+          className="object-contain scale-150"
+        />
+      </div>
     </nav>
-  )
+  );
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { CalendarEvent } from "@/types/event";
-import AddEventModal from "./add-event-modal";
-import EventModal from "./event-modal";
+import AddEventModal from "../calendar/events-cal/add-event-modal";
+import EventModal from "../calendar/events-cal/event-modal";
 import { useState } from "react";
 import Image from "next/image";
 import {
