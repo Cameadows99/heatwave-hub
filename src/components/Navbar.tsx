@@ -20,10 +20,9 @@ export default function Navbar() {
       {/* Nav Links */}
       <div className="mt-4 w-full bg-sky-400 text-yellow-300 font-semibold flex justify-around py-2 rounded-md shadow-md text-sm sm:text-base">
         <Link href="/home">Home</Link>
-        <Link href="/teams">Teams</Link>
-        <Link href="/work-orders">Work Order</Link>
-        <Link href="/schedule">Schedule</Link>
         <Link href="/calendar">Calendar</Link>
+        <Link href="/order-requests">Orders</Link>
+        <Link href="work-orders">Work</Link>
       </div>
       <div className="relative w-30 h-10">
         <Image

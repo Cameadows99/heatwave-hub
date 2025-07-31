@@ -1,6 +1,6 @@
 // utils/timeOffUtils.ts
 
-import { TimeOffRequest } from "@/types/timeOffRequest";
+import { TimeOffRequest } from "@/types/timeOff";
 
 // Simulated data source (to be replaced with DB logic later)
 let timeOffRequests: TimeOffRequest[] = [];
@@ -16,18 +16,19 @@ export function getRequestsForDate(date: Date): TimeOffRequest[] {
 }
 
 export function formatRequestLabel(r: TimeOffRequest): string {
-  return r.time ? `${r.name} (${r.time})` : r.name;
+  const nameWithTime = r.time ? `${r.name} (${r.time})` : r.name;
+  return r.status === "pending" ? `${nameWithTime} ?` : nameWithTime;
 }
 
-export function getStatusStyle(approved?: boolean): string {
-  if (approved === undefined) return "text-yellow-500 italic";
-  if (approved === false) return "text-red-500 line-through";
-  return "text-green-600 font-bold";
+export function getStatusStyle(status: TimeOffRequest["status"]): string {
+  if (status === "pending") return "text-yellow-500 font-medium italic";
+  if (status === "approved") return "text-sky-600 font-semibold";
+  return "text-gray-500";
 }
 
 export function approveTimeOff(id: string): void {
   const request = timeOffRequests.find((req) => req.id === id);
-  if (request) request.approved = true;
+  if (request) request.status = "approved";
 }
 
 export function denyTimeOff(id: string): void {

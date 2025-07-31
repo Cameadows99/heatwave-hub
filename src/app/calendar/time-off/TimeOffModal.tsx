@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  getTimeOffForDate,
+  getRequestsForDate,
   approveTimeOff,
   denyTimeOff,
 } from "@/utils/timeOffUtils";
@@ -12,19 +12,21 @@ interface TimeOffModalProps {
   date: Date;
   isAdmin: boolean;
   onClose: () => void;
+  onRequest: () => void;
 }
 
 export default function TimeOffModal({
   date,
   isAdmin,
   onClose,
+  onRequest,
 }: TimeOffModalProps) {
   const [requests, setRequests] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
     const loadRequests = async () => {
-      const data = await getTimeOffForDate(date);
+      const data = await getRequestsForDate(date);
       setRequests(data);
     };
     loadRequests();
@@ -103,7 +105,7 @@ export default function TimeOffModal({
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => router.push("/calendar/time-off-form")}
+            onClick={onRequest}
             className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-full"
           >
             Request Time Off

@@ -12,7 +12,6 @@ export default function CalendarPage() {
   const searchParams = useSearchParams();
   const viewParam = searchParams.get("view") as "events" | "hours" | "time-off";
   const [mode, setMode] = useState<"events" | "hours" | "time-off">("events");
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const { data: session } = useSession();
   const isAdmin =
@@ -65,17 +64,7 @@ export default function CalendarPage() {
 
       {mode === "events" && <EventsCalendar />}
       {mode === "hours" && <HoursCalendar />}
-      {mode === "time-off" && (
-        <TimeOffCalendar isAdmin={isAdmin} onDayClick={setSelectedDay} />
-      )}
-
-      {selectedDay && (
-        <TimeOffModal
-          date={selectedDay}
-          onClose={() => setSelectedDay(null)}
-          isAdmin={isAdmin}
-        />
-      )}
+      {mode === "time-off" && <TimeOffCalendar isAdmin={isAdmin} />}
     </div>
   );
 }

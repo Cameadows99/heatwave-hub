@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import BaseCalendar from "../../../components/BaseCalendar";
-import EventModal from "./event-modal";
-import AddEventModal from "./add-event-modal";
+import EventModal from "./EventModal";
+import AddEventModal from "./AddEventModal";
 import { CalendarEvent } from "@/types/event";
 
 export default function EventsCalendar() {
@@ -12,30 +12,61 @@ export default function EventsCalendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
   useEffect(() => {
-    const stored = localStorage.getItem("heatwave-events");
-    if (stored) setEvents(JSON.parse(stored));
+    const fetchEvents = async () => {
+      try {
+        const res = await fetch("/api/events");
+        const data = await res.json();
+        setEvents(data);
+      } catch (err) {
+        console.error("Error fetching events:", err);
+      }
+    };
+    fetchEvents();
   }, []);
 
+  // Filter by ISO string match
   const getEventsForDate = (date: Date): CalendarEvent[] => {
     const dateStr = date.toISOString().slice(0, 10);
     return events.filter((e) => e.date === dateStr);
   };
 
-  const handleAddEvent = (newEvent: CalendarEvent) => {
-    const updated = [...events, newEvent];
-    setEvents(updated);
-    localStorage.setItem("heatwave-events", JSON.stringify(updated));
+  const handleAddEvent = async (newEvent: CalendarEvent) => {
+    try {
+      const res = await fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEvent),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setEvents((prev) => [...prev, created]);
+      }
+    } catch (err) {
+      console.error("Failed to add event:", err);
+    }
   };
 
-  const handleDeleteEvent = (toDelete: CalendarEvent) => {
-    const updated = events.filter(
-      (ev) => !(ev.title === toDelete.title && ev.date === toDelete.date)
-    );
-    setEvents(updated);
-    localStorage.setItem("heatwave-events", JSON.stringify(updated));
+  //  use DELETE
+  const handleDeleteEvent = async (toDelete: CalendarEvent) => {
+    try {
+      const res = await fetch("/api/events/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: toDelete.title, date: toDelete.date }),
+      });
 
-    const stillHas = updated.some((ev) => ev.date === toDelete.date);
-    if (!stillHas) setSelectedDate(null);
+      if (res.ok) {
+        const updated = events.filter(
+          (ev) => !(ev.title === toDelete.title && ev.date === toDelete.date)
+        );
+        setEvents(updated);
+
+        const stillHas = updated.some((ev) => ev.date === toDelete.date);
+        if (!stillHas) setSelectedDate(null);
+      }
+    } catch (err) {
+      console.error("Failed to delete event:", err);
+    }
   };
 
   return (

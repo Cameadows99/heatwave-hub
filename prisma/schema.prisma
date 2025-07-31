@@ -9,16 +9,19 @@ datasource db {
 }
 
 model User {
-  id          String           @id @default(cuid())
-  name        String
-  email       String           @unique
-  password    String
-  role        Role             @default(WORKER)
-  team        String?
-  createdAt   DateTime         @default(now())
-  rsvps       RSVP[]
-  timeEntries TimeEntry[]
-  timeOff     TimeOffRequest[]
+  id            String           @id @default(cuid())
+  name          String
+  email         String           @unique
+  password      String
+  role          Role             @default(EMPLOYEE)
+  team          String?
+  createdAt     DateTime         @default(now())
+  accounts      Account[]
+  orderRequests OrderRequest[]   @relation("UserOrderRequests")
+  rsvps         Rsvp[]           @relation("UserRsvps")
+  sessions      Session[]
+  timeEntries   TimeEntry[]
+  timeOff       TimeOffRequest[]
 }
 
 model TimeEntry {
@@ -27,7 +30,7 @@ model TimeEntry {
   clockIn   DateTime
   clockOut  DateTime?
   createdAt DateTime  @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime  @updatedAt
   user      User      @relation(fields: [userId], references: [id])
 }
 
@@ -45,31 +48,88 @@ model TimeOffRequest {
 model Event {
   id          String   @id @default(cuid())
   title       String
-  date        DateTime
+  date        String
   location    String
   description String
-  createdAt   DateTime @default(now())
-  rsvps       RSVP[]
+  attendees   String[] @default([])
+  time        String?
+  rsvps       Rsvp[]   @relation("EventRsvps")
 }
 
-model RSVP {
+
+model Rsvp {
   id        String   @id @default(cuid())
-  userId    String
   eventId   String
+  userId    String?
+  name      String
+  plusCount Int      @default(0)
   createdAt DateTime @default(now())
-  event     Event    @relation(fields: [eventId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
 
-  @@unique([userId, eventId])
+  event     Event    @relation("EventRsvps", fields: [eventId], references: [id], onDelete: Cascade)
+  user      User?    @relation("UserRsvps", fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
 }
 
-enum Role {
-  ADMIN
-  WORKER
+model OrderRequest {
+  id          String   @id @default(cuid())
+  requesterId String
+  createdAt   DateTime @default(now())
+  items       String[]
+  details     String?
+  reason      String?
+  ordered     Boolean  @default(false)
+  requester   User     @relation("UserOrderRequests", fields: [requesterId], references: [id])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model playing_with_neon {
+  id    Int    @id @default(autoincrement())
+  name  String
+  value Float? @db.Real
 }
 
 enum TimeOffStatus {
   PENDING
   APPROVED
   DENIED
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+  MANAGER
 }
