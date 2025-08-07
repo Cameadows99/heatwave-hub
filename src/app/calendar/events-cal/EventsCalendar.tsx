@@ -3,12 +3,10 @@
 import { useState, useEffect } from "react";
 import BaseCalendar from "../../../components/BaseCalendar";
 import EventModal from "./EventModal";
-import AddEventModal from "./AddEventModal";
 import { CalendarEvent } from "@/types/event";
 
 export default function EventsCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
   useEffect(() => {
@@ -24,7 +22,6 @@ export default function EventsCalendar() {
     fetchEvents();
   }, []);
 
-  // Filter by ISO string match
   const getEventsForDate = (date: Date): CalendarEvent[] => {
     const dateStr = date.toISOString().slice(0, 10);
     return events.filter((e) => e.date === dateStr);
@@ -46,7 +43,6 @@ export default function EventsCalendar() {
     }
   };
 
-  //  use DELETE
   const handleDeleteEvent = async (toDelete: CalendarEvent) => {
     try {
       const res = await fetch("/api/events/delete", {
@@ -60,7 +56,6 @@ export default function EventsCalendar() {
           (ev) => !(ev.title === toDelete.title && ev.date === toDelete.date)
         );
         setEvents(updated);
-
         const stillHas = updated.some((ev) => ev.date === toDelete.date);
         if (!stillHas) setSelectedDate(null);
       }
@@ -72,11 +67,7 @@ export default function EventsCalendar() {
   return (
     <>
       <BaseCalendar
-        onDayClick={(date) => {
-          const dayEvents = getEventsForDate(date);
-          setSelectedDate(date);
-          setShowAddModal(dayEvents.length >= 0 && dayEvents.length < 2);
-        }}
+        onDayClick={(date) => setSelectedDate(date)}
         renderDayContent={(date) => {
           const list = getEventsForDate(date);
           return list.length > 0 ? (

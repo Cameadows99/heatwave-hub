@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CalendarEvent } from "@/types/event";
 import { useSession } from "next-auth/react";
+import RSVPModal from "../../../components/RSVPModal";
 
 interface Props {
   day: number;
@@ -39,31 +40,34 @@ export default function EventModal({
     description: "",
   });
 
-  const [localEvents, setLocalEvents] = useState<CalendarEvent[]>([]);
   const [userRsvps, setUserRsvps] = useState<string[]>([]);
+  const [rsvpsLoading, setRsvpsLoading] = useState(true);
+  const [selectedRSVPEventId, setSelectedRSVPEventId] = useState<string | null>(
+    null
+  );
 
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const sessionReady = status === "authenticated" && !!session?.user?.id;
+  const formattedDate = new Date(year, month, day).toDateString();
 
   useEffect(() => {
     const fetchRsvps = async () => {
       if (!session?.user?.id) return;
-      const res = await fetch(`/api/rsvp/user/${session.user.id}`);
-      const data = await res.json();
-      setUserRsvps(data.map((r: { eventId: string }) => r.eventId));
+
+      setRsvpsLoading(true);
+      try {
+        const res = await fetch(`/api/rsvp/user/${session.user.id}`);
+        const data = await res.json();
+        setUserRsvps(data.map((r: { eventId: string }) => r.eventId));
+      } catch (err) {
+        console.error("RSVP fetch error:", err);
+      } finally {
+        setRsvpsLoading(false);
+      }
     };
 
     fetchRsvps();
-  }, [session]);
-
-  const formattedDate = new Date(year, month, day).toDateString();
-
-  useEffect(() => {
-    setLocalEvents(events);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [events]);
+  }, [session?.user?.id, events]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -73,15 +77,10 @@ export default function EventModal({
 
   const handleRSVP = async (ev: CalendarEvent) => {
     const eventId = ev.id;
-
-    if (typeof eventId !== "string") {
-      console.error("Event is missing a valid ID");
-      return;
-    }
+    if (!eventId) return;
 
     try {
       const isReserved = userRsvps.includes(eventId);
-
       const res = await fetch("/api/rsvp", {
         method: isReserved ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -92,30 +91,37 @@ export default function EventModal({
         setUserRsvps((prev) =>
           isReserved ? prev.filter((id) => id !== eventId) : [...prev, eventId]
         );
-      } else {
-        console.error("Failed to toggle RSVP:", await res.json());
       }
     } catch (err) {
       console.error("RSVP toggle error:", err);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleRemoveRsvpId = (removedEventId: string) => {
+    setUserRsvps((prev) => prev.filter((id) => id !== removedEventId));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
       day
     ).padStart(2, "0")}`;
+    const newEvent: CalendarEvent = { ...form, date: dateStr, attendees: [] };
 
-    const newEvent: CalendarEvent = {
-      ...form,
-      date: dateStr,
-      attendees: [],
-    };
-
-    onAdd(newEvent);
-    setShowAddForm(false);
+    await onAdd(newEvent);
     setForm({ title: "", time: "12:00", location: "", description: "" });
+    setShowAddForm(false);
   };
+
+  if (rsvpsLoading) {
+    return (
+      <div className="fixed inset-0 flex justify-center items-center bg-black/30 z-50">
+        <div className="bg-white p-4 rounded shadow text-center">
+          Loading event data...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 flex justify-center items-center bg-black/30 z-50">
@@ -131,216 +137,115 @@ export default function EventModal({
           {formattedDate}
         </h2>
 
-        {/* Add ev Form */}
         {showAddForm ? (
           <form onSubmit={handleSubmit} className="space-y-3">
             <input
               name="title"
-              placeholder="event Title"
               value={form.title}
               onChange={handleChange}
               required
-              className="w-full border p-2 rounded text-gray-800"
+              placeholder="Event Title"
+              className="w-full border p-2 rounded"
             />
             <input
-              type="time"
               name="time"
               value={form.time}
+              type="time"
               onChange={handleChange}
-              required
-              className="w-full border p-2 rounded text-gray-800"
+              className="w-full border p-2 rounded"
             />
             <input
               name="location"
-              placeholder="Location"
               value={form.location}
               onChange={handleChange}
               required
-              className="w-full border p-2 rounded text-gray-800"
+              placeholder="Location"
+              className="w-full border p-2 rounded"
             />
             <textarea
               name="description"
-              placeholder="Description"
               value={form.description}
               onChange={handleChange}
               required
-              className="w-full border p-2 rounded text-gray-800"
+              placeholder="Description"
+              className="w-full border p-2 rounded"
             />
             <button
               type="submit"
               className="w-full bg-sky-600 text-white py-2 rounded hover:bg-sky-700"
             >
-              Save event
+              Save Event
             </button>
           </form>
         ) : (
           <>
-            {localEvents.length > 0 ? (
-              <>
-                {localEvents.map((ev, i) => {
-                  const isEditing = editIndex === i;
+            {events.length > 0 ? (
+              events.map((ev, i) => {
+                const isReserved = ev.id ? userRsvps.includes(ev.id) : false;
 
-                  return (
-                    <div key={i}>
-                      {isEditing ? (
-                        <form
-                          onSubmit={async (e) => {
-                            e.preventDefault();
-
-                            const res = await fetch("/api/events/update", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                originalTitle: ev.title,
-                                originalDate: ev.date,
-                                ...editForm,
-                              }),
-                            });
-                            if (res.ok) {
-                              const updated = [...localEvents];
-                              updated[i] = { ...editForm, date: ev.date };
-                              setLocalEvents(updated);
-                              setEditIndex(null);
-                            }
-                          }}
-                          className="space-y-2"
-                        >
-                          <input
-                            name="title"
-                            value={editForm.title}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({
-                                ...prev,
-                                title: e.target.value,
-                              }))
-                            }
-                            className="w-full border p-1 rounded text-sm"
-                          />
-                          <input
-                            name="time"
-                            type="time"
-                            value={editForm.time}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({
-                                ...prev,
-                                time: e.target.value,
-                              }))
-                            }
-                            className="w-full border p-1 rounded text-sm"
-                          />
-                          <input
-                            name="location"
-                            value={editForm.location}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({
-                                ...prev,
-                                location: e.target.value,
-                              }))
-                            }
-                            className="w-full border p-1 rounded text-sm"
-                          />
-                          <textarea
-                            name="description"
-                            value={editForm.description}
-                            onChange={(e) =>
-                              setEditForm((prev) => ({
-                                ...prev,
-                                description: e.target.value,
-                              }))
-                            }
-                            className="w-full border p-1 rounded text-sm"
-                          />
-                          <div className="flex gap-2 justify-end">
-                            <button
-                              type="submit"
-                              className="px-2 py-1 text-sm bg-green-500 text-white rounded"
-                            >
-                              Save
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditIndex(null)}
-                              className="px-2 py-1 text-sm bg-gray-400 text-white rounded"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </form>
-                      ) : (
-                        <>
-                          <div className="mb-4 border-b pb-2 relative group hover:bg-gray-200 cursor-pointer">
-                            <div
-                              onClick={() =>
-                                alert(`View RSVPs for: ${ev.title}`)
-                              }
-                              className="group cursor-pointer"
-                            >
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                                Click to see reservations
-                              </div>
-
-                              <h3 className="text-lg font-semibold text-sky-700">
-                                {ev.title}
-                              </h3>
-                              <p className="text-sm text-gray-500">
-                                {ev.time} @ {ev.location}
-                              </p>
-                              <p className="text-sm text-gray-500 mt-1">
-                                {ev.description}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex gap-2 mt-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRSVP(ev);
-                              }}
-                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                            >
-                              Reserve
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditIndex(i);
-                                setEditForm({
-                                  title: ev.title,
-                                  time: ev.time,
-                                  location: ev.location,
-                                  description: ev.description,
-                                });
-                              }}
-                              className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(ev);
-                                setLocalEvents((prev) =>
-                                  prev.filter((_, idx) => idx !== i)
-                                );
-                              }}
-                              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </>
-                      )}
+                return (
+                  <div key={i}>
+                    <div className="mb-4 border-b pb-2 relative group hover:bg-gray-200 cursor-pointer">
+                      <div
+                        onClick={() => ev.id && setSelectedRSVPEventId(ev.id)}
+                        className="group cursor-pointer"
+                      >
+                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          Click to see reservations
+                        </div>
+                        <h3 className="text-lg font-semibold text-sky-700">
+                          {ev.title}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {ev.time} @ {ev.location}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {ev.description}
+                        </p>
+                      </div>
                     </div>
-                  );
-                })}
-                <button
-                  onClick={() => setShowAddForm(true)}
-                  className="w-full mt-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-white font-semibold rounded"
-                >
-                  Add Another event
-                </button>
-              </>
+
+                    <div className="flex gap-2 mt-2">
+                      {sessionReady && ev.id && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRSVP(ev);
+                          }}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                        >
+                          {isReserved ? "Unreserve" : "Reserve"}
+                        </button>
+                      )}
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditIndex(i);
+                          setEditForm({
+                            title: ev.title,
+                            time: ev.time,
+                            location: ev.location,
+                            description: ev.description,
+                          });
+                        }}
+                        className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(ev);
+                        }}
+                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
             ) : (
               <div className="text-center py-6">
                 <p className="text-lg font-semibold text-gray-700 mb-4">
@@ -350,13 +255,25 @@ export default function EventModal({
                   onClick={() => setShowAddForm(true)}
                   className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-white font-semibold rounded"
                 >
-                  Add event
+                  Add Event
                 </button>
               </div>
             )}
           </>
         )}
       </div>
+
+      {selectedRSVPEventId && (
+        <RSVPModal
+          eventId={selectedRSVPEventId}
+          userId={session?.user?.id ?? ""}
+          isAdmin={
+            session?.user?.role === "ADMIN" || session?.user?.role === "MANAGER"
+          }
+          onClose={() => setSelectedRSVPEventId(null)}
+          onRemoveRsvpId={handleRemoveRsvpId}
+        />
+      )}
     </div>
   );
 }
