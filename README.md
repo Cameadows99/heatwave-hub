@@ -1,36 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Necessary updates
 
-## Getting Started
+## A Profile Page that contains:
 
-First, run the development server:
+### Easy access for current week daily and total hours (starting count at monday 5 a.m. Ending Saturday midnight)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### Current requested days off (display dates)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Context for role (i.e. employee, manager, admin)?
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Admin Ability to click user and see daily hours with total weekly hours added up (for pay)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### No pay involved in app. Only daily hours (in decimal) and weekly hours.
 
-## Learn More
+## Suggestion box
 
-To learn more about Next.js, take a look at the following resources:
+### Details in /components/suggestions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Finish OrderList
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### /components/orderRequests
