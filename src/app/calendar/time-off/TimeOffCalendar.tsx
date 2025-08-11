@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import BaseCalendar from "@/components/BaseCalendar";
 import { TimeOffRequest } from "@/types/timeOff";
@@ -40,14 +40,23 @@ export default function TimeOffCalendar({ isAdmin }: TimeOffCalendarProps) {
     localStorage.setItem("heatwave-timeoff", JSON.stringify(updated));
   };
 
-  // Safer local date comparison
+  // Helper: local YYYY-MM-DD
+  const ymdLocal = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  // Requests for a given day (and only today/future)
   const getDayRequests = (date: Date) => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // ignore time, just compare date
+    today.setHours(0, 0, 0, 0);
 
     return requests.filter((r) => {
       const [year, month, day] = r.date.split("-").map(Number);
       const localDate = new Date(year, month - 1, day);
+      localDate.setHours(0, 0, 0, 0);
 
       const isSameDay =
         localDate.getFullYear() === date.getFullYear() &&
@@ -55,10 +64,23 @@ export default function TimeOffCalendar({ isAdmin }: TimeOffCalendarProps) {
         localDate.getDate() === date.getDate();
 
       const isTodayOrFuture = localDate >= today;
-
       return isSameDay && isTodayOrFuture;
     });
   };
+
+  // Build a fast lookup of days that have requests (today or future)
+  const timeOffDateSet = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const s = new Set<string>();
+    for (const r of requests) {
+      const [y, m, d] = r.date.split("-").map(Number);
+      const localDate = new Date(y, m - 1, d);
+      localDate.setHours(0, 0, 0, 0);
+      if (localDate >= today) s.add(ymdLocal(localDate));
+    }
+    return s;
+  }, [requests]);
 
   // Display name(s) on calendar
   const renderDayContent = (date: Date) => {
@@ -86,6 +108,7 @@ export default function TimeOffCalendar({ isAdmin }: TimeOffCalendarProps) {
     <>
       <BaseCalendar
         renderDayContent={renderDayContent}
+        hasContentForDate={(date) => timeOffDateSet.has(ymdLocal(date))}
         onDayClick={(date) => {
           setSelectedDate(date);
         }}

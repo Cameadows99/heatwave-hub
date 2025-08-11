@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import BaseCalendar from "../../../components/BaseCalendar";
 import EventModal from "./EventModal";
 import { CalendarEvent } from "@/types/event";
@@ -22,10 +22,20 @@ export default function EventsCalendar() {
     fetchEvents();
   }, []);
 
+  // Helper to match how you're currently comparing dates (UTC string slice)
+  const ymdUtc = (date: Date) => date.toISOString().slice(0, 10);
+
   const getEventsForDate = (date: Date): CalendarEvent[] => {
-    const dateStr = date.toISOString().slice(0, 10);
+    const dateStr = ymdUtc(date);
     return events.filter((e) => e.date === dateStr);
   };
+
+  // Fast lookup for whether a date has content (events). Add time-off later by unioning sets.
+  const eventDateSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const e of events) s.add(e.date);
+    return s;
+  }, [events]);
 
   const handleAddEvent = async (newEvent: CalendarEvent) => {
     try {
@@ -68,13 +78,14 @@ export default function EventsCalendar() {
     <>
       <BaseCalendar
         onDayClick={(date) => setSelectedDate(date)}
+        hasContentForDate={(date) => eventDateSet.has(ymdUtc(date))}
         renderDayContent={(date) => {
           const list = getEventsForDate(date);
           return list.length > 0 ? (
-            <div className="mt-1 text-[0.75rem] text-orange-600 font-medium text-center space-y-1 max-h-[3.5rem] overflow-y-auto">
+            <div className="  text-orange-600 font-medium text-center space-y-1 max-h-[3.5rem] overflow-y-auto">
               {list.slice(0, 2).map((ev, idx) => (
                 <div key={idx}>
-                  {ev.title}
+                  <div className="font-semibold">{ev.title}</div>
                   <div className="text-[0.65rem] font-bold text-gray-700">
                     {ev.time}
                   </div>

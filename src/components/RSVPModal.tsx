@@ -31,17 +31,19 @@ export default function RSVPModal({
   const fetchRsvps = async () => {
     const res = await fetch(`/api/rsvp?eventId=${eventId}`);
     const data = await res.json();
-    setRsvps(data);
+    setRsvps((prev) => {
+      // Keep original order if same IDs are present
+      const prevOrder = prev.map((r) => r.id);
+      const sorted = [...data].sort(
+        (a, b) => prevOrder.indexOf(a.id) - prevOrder.indexOf(b.id)
+      );
+      return prev.length ? sorted : data;
+    });
   };
 
   useEffect(() => {
     fetchRsvps();
   }, [eventId]);
-
-  useEffect(() => {
-    console.log("User ID:", userId);
-    console.log("RSVPs:", rsvps);
-  }, [rsvps, userId]);
 
   const isReserved = rsvps.some((r) => r.userId === userId);
 
@@ -66,7 +68,13 @@ export default function RSVPModal({
     });
 
     if (res.ok) {
-      await fetchRsvps();
+      const updated = await res.json();
+      // Update only the changed RSVP locally
+      setRsvps((prev) =>
+        prev.map((r) =>
+          r.id === rsvpId ? { ...r, plusCount: updated.plusCount } : r
+        )
+      );
     }
   };
 
@@ -78,7 +86,7 @@ export default function RSVPModal({
     });
 
     if (res.ok) {
-      await fetchRsvps();
+      setRsvps((prev) => prev.filter((r) => r.id !== id));
       if (onRemoveRsvpId) onRemoveRsvpId(eventId);
     }
   };
@@ -93,11 +101,15 @@ export default function RSVPModal({
     });
 
     if (res.ok) {
-      await fetchRsvps();
+      const added = await res.json();
+      setRsvps((prev) => [...prev, added]); // keep added at end
       setNewName("");
       setShowAddField(false);
     }
   };
+
+  // NEW: total count (1 per RSVP + plusCount extras)
+  const totalRsvps = rsvps.reduce((sum, r) => sum + 1 + (r.plusCount || 0), 0);
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
@@ -116,39 +128,63 @@ export default function RSVPModal({
           return (
             <div
               key={r.id}
-              className="flex justify-between items-center border-b py-2 text-sm"
+              className="flex items-center justify-between border-b py-2 text-sm"
             >
-              <div className="flex items-center gap-2">
-                <span>{r.name}</span>
-                {r.plusCount > 0 && (
-                  <span className="text-xs text-gray-700 ">
-                    (+ {r.plusCount})
-                  </span>
-                )}
+              <span className="relative inline-block">
+                <span className="font-medium">{r.name}</span>
 
-                {canEdit && (
-                  <button
-                    onClick={() => handlePlusChange(r.id, 1)}
-                    className="text-gray-400 hover:text-gray-700 text-xs font-bold"
-                    title="Add +1"
+                <span
+                  className="
+                    absolute
+                    -top-2
+                    -right-7
+                    flex items-center
+                    leading-none
+                    w-7 justify-end
+                  "
+                  style={{ transform: "translateY(25%)" }}
+                >
+                  {canEdit ? (
+                    <button
+                      onClick={() => handlePlusChange(r.id, 1)}
+                      aria-label="Add plus one"
+                      className="text-blue-600 hover:text-blue-400 font-extrabold text-[14px]"
+                      style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.3)" }}
+                    >
+                      ⁺
+                    </button>
+                  ) : (
+                    <span className="text-[14px] opacity-0 select-none">⁺</span>
+                  )}
+
+                  <span
+                    className="
+                      text-[12px] text-gray-700 tabular-nums
+                      inline-block text-center
+                      w-6
+                    "
                   >
-                    +
-                  </button>
-                )}
-                {r.plusCount > 0 && (
-                  <>
-                    {canEdit && (
-                      <button
-                        onClick={() => handlePlusChange(r.id, -1)}
-                        className="text-gray-400 hover:text-gray-700 text-xs font-bold"
-                        title="Remove +1"
-                      >
-                        –
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
+                    {r.plusCount > 0 ? r.plusCount : "\u00A0\u00A0"}
+                  </span>
+
+                  {canEdit ? (
+                    <button
+                      onClick={() => handlePlusChange(r.id, -1)}
+                      aria-label="Remove plus one"
+                      className={`font-extrabold text-[14px] ${
+                        r.plusCount > 0
+                          ? "text-yellow-500 hover:text-yellow-400"
+                          : "text-yellow-500 opacity-0 pointer-events-none"
+                      }`}
+                      style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.3)" }}
+                    >
+                      ⁻
+                    </button>
+                  ) : (
+                    <span className="text-[10px] opacity-0 select-none">⁻</span>
+                  )}
+                </span>
+              </span>
 
               {canEdit && (
                 <button
@@ -166,7 +202,13 @@ export default function RSVPModal({
           <p className="text-center text-gray-400 mt-6">No RSVPs yet</p>
         )}
 
-        <div className="mt-6 border-t pt-4 space-y-2">
+        {/* NEW: Total row */}
+        <div className="mt-3 flex items-center font-[800] justify-between text-xs italic">
+          <span>Total RSVPs</span>
+          <span className="tabular-nums">{totalRsvps}</span>
+        </div>
+
+        <div className="mt-1 border-t pt-1 space-y-2">
           <div className="flex justify-between items-center">
             <button
               onClick={handleReserveToggle}

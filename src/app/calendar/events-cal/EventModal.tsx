@@ -15,6 +15,9 @@ interface Props {
   onDelete: (eventToDelete: CalendarEvent) => void;
 }
 
+type Totals = { people: number; plus: number; combined: number };
+type TotalsMap = Record<string, Totals>;
+
 export default function EventModal({
   day,
   month,
@@ -40,34 +43,43 @@ export default function EventModal({
     description: "",
   });
 
-  const [userRsvps, setUserRsvps] = useState<string[]>([]);
-  const [rsvpsLoading, setRsvpsLoading] = useState(true);
+  const [totals, setTotals] = useState<TotalsMap>({});
   const [selectedRSVPEventId, setSelectedRSVPEventId] = useState<string | null>(
     null
   );
 
-  const { data: session, status } = useSession();
-  const sessionReady = status === "authenticated" && !!session?.user?.id;
+  const { data: session } = useSession();
+  const isAdmin =
+    session?.user?.role === "ADMIN" || session?.user?.role === "MANAGER";
   const formattedDate = new Date(year, month, day).toDateString();
 
+  // Fetch totals for a single event
+  const fetchTotalsForEvent = async (eventId: string) => {
+    try {
+      const res = await fetch(`/api/rsvp?eventId=${eventId}`);
+      if (!res.ok) return;
+      const data: Array<{ plusCount: number }> = await res.json();
+      const people = data.length;
+      const plus = data.reduce((sum, r) => sum + (r.plusCount || 0), 0);
+      setTotals((prev) => ({
+        ...prev,
+        [eventId]: { people, plus, combined: people + plus },
+      }));
+    } catch {
+      // swallow per-event errors to avoid blocking UI
+    }
+  };
+
+  // Fetch totals for all current events
+  const fetchAllTotals = async () => {
+    const ids = events.map((e) => e.id).filter(Boolean) as string[];
+    await Promise.all(ids.map((id) => fetchTotalsForEvent(id)));
+  };
+
   useEffect(() => {
-    const fetchRsvps = async () => {
-      if (!session?.user?.id) return;
-
-      setRsvpsLoading(true);
-      try {
-        const res = await fetch(`/api/rsvp/user/${session.user.id}`);
-        const data = await res.json();
-        setUserRsvps(data.map((r: { eventId: string }) => r.eventId));
-      } catch (err) {
-        console.error("RSVP fetch error:", err);
-      } finally {
-        setRsvpsLoading(false);
-      }
-    };
-
-    fetchRsvps();
-  }, [session?.user?.id, events]);
+    fetchAllTotals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -75,30 +87,9 @@ export default function EventModal({
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleRSVP = async (ev: CalendarEvent) => {
-    const eventId = ev.id;
-    if (!eventId) return;
-
-    try {
-      const isReserved = userRsvps.includes(eventId);
-      const res = await fetch("/api/rsvp", {
-        method: isReserved ? "DELETE" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId }),
-      });
-
-      if (res.ok) {
-        setUserRsvps((prev) =>
-          isReserved ? prev.filter((id) => id !== eventId) : [...prev, eventId]
-        );
-      }
-    } catch (err) {
-      console.error("RSVP toggle error:", err);
-    }
-  };
-
-  const handleRemoveRsvpId = (removedEventId: string) => {
-    setUserRsvps((prev) => prev.filter((id) => id !== removedEventId));
+  // Called by RSVPModal after an RSVP is removed/unreserved
+  const handleRemoveRsvpId = async (updatedEventId: string) => {
+    await fetchTotalsForEvent(updatedEventId);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,16 +103,6 @@ export default function EventModal({
     setForm({ title: "", time: "12:00", location: "", description: "" });
     setShowAddForm(false);
   };
-
-  if (rsvpsLoading) {
-    return (
-      <div className="fixed inset-0 flex justify-center items-center bg-black/30 z-50">
-        <div className="bg-white p-4 rounded shadow text-center">
-          Loading event data...
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 flex justify-center items-center bg-black/30 z-50">
@@ -181,7 +162,7 @@ export default function EventModal({
           <>
             {events.length > 0 ? (
               events.map((ev, i) => {
-                const isReserved = ev.id ? userRsvps.includes(ev.id) : false;
+                const t = ev.id ? totals[ev.id] : undefined;
 
                 return (
                   <div key={i}>
@@ -193,6 +174,7 @@ export default function EventModal({
                         <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                           Click to see reservations
                         </div>
+
                         <h3 className="text-lg font-semibold text-sky-700">
                           {ev.title}
                         </h3>
@@ -202,22 +184,26 @@ export default function EventModal({
                         <p className="text-sm text-gray-500 mt-1">
                           {ev.description}
                         </p>
+
+                        {/* Totals line (combined, rsvps, plus-ones) */}
+                        {ev.id && (
+                          <div className="text-sm text-gray-500 mt-1">
+                            {t ? (
+                              <>
+                                Total attending:{" "}
+                                <span className="tabular-nums">
+                                  {t.combined}
+                                </span>
+                              </>
+                            ) : (
+                              "Calculating total…"
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     <div className="flex gap-2 mt-2">
-                      {sessionReady && ev.id && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRSVP(ev);
-                          }}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                        >
-                          {isReserved ? "Unreserve" : "Reserve"}
-                        </button>
-                      )}
-
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -229,7 +215,7 @@ export default function EventModal({
                             description: ev.description,
                           });
                         }}
-                        className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm"
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500 text-sm"
                       >
                         Edit
                       </button>
@@ -238,7 +224,7 @@ export default function EventModal({
                           e.stopPropagation();
                           onDelete(ev);
                         }}
-                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-400"
                       >
                         Delete
                       </button>
@@ -267,10 +253,13 @@ export default function EventModal({
         <RSVPModal
           eventId={selectedRSVPEventId}
           userId={session?.user?.id ?? ""}
-          isAdmin={
-            session?.user?.role === "ADMIN" || session?.user?.role === "MANAGER"
-          }
-          onClose={() => setSelectedRSVPEventId(null)}
+          isAdmin={isAdmin ?? false}
+          onClose={async () => {
+            // refresh the totals for the event you just viewed/edited
+            const id = selectedRSVPEventId;
+            setSelectedRSVPEventId(null);
+            if (id) await fetchTotalsForEvent(id);
+          }}
           onRemoveRsvpId={handleRemoveRsvpId}
         />
       )}

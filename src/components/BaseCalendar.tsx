@@ -13,9 +13,11 @@ const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export default function BaseCalendar({
   renderDayContent,
   onDayClick,
+  hasContentForDate, // NEW: tell the calendar if a day has events/time-off
 }: {
   renderDayContent?: (date: Date) => React.ReactNode;
   onDayClick?: (date: Date) => void;
+  hasContentForDate?: (date: Date) => boolean;
 }) {
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -27,13 +29,10 @@ export default function BaseCalendar({
   const blankDays = Array(firstDay).fill(null);
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const isToday = (day: number): boolean => {
-    return (
-      day === today.getDate() &&
-      currentMonth === today.getMonth() &&
-      currentYear === today.getFullYear()
-    );
-  };
+  const isToday = (day: number): boolean =>
+    day === today.getDate() &&
+    currentMonth === today.getMonth() &&
+    currentYear === today.getFullYear();
 
   const goToPrevMonth = () => {
     setCurrentMonth((prev) => (prev === 0 ? 11 : prev - 1));
@@ -65,12 +64,14 @@ export default function BaseCalendar({
           →
         </button>
       </div>
+
       {/* Days of Week */}
       <div className="grid grid-cols-7 text-center text-sm text-sky-700 font-semibold mb-2">
         {daysOfWeek.map((day) => (
           <div key={day}>{day}</div>
         ))}
       </div>
+
       {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-1 text-center">
         {blankDays.map((_, i) => (
@@ -78,8 +79,9 @@ export default function BaseCalendar({
         ))}
 
         {daysArray.map((day) => {
-          const isCurrentDay = isToday(day);
           const dateObj = new Date(currentYear, currentMonth, day);
+          const isCurrentDay = isToday(day);
+          const hasContent = hasContentForDate?.(dateObj) ?? false;
 
           return (
             <div
@@ -92,9 +94,11 @@ export default function BaseCalendar({
                   <Image
                     src="/logos/heat-sun.png"
                     alt="Today"
-                    width={48}
-                    height={48}
-                    className="opacity-40"
+                    width={54}
+                    height={54}
+                    className={`transition-opacity duration-200 ${
+                      hasContent ? "opacity-30" : "opacity-90"
+                    }`}
                   />
                 </div>
               )}
