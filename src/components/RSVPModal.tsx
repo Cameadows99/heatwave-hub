@@ -116,7 +116,7 @@ export default function RSVPModal({
       <div className="bg-white p-6 rounded-lg w-[90%] max-w-md shadow-lg relative">
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
+          className="absolute top-2 right-2 text-red-800 hover:text-red-500"
         >
           ✕
         </button>

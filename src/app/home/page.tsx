@@ -1,19 +1,20 @@
-import HomePage from "./homepage/page";
+// src/app/home/page.tsx  (SERVER component)
+import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import HomeClient from "./HomeClient";
 
-export default async function Home() {
+export default async function HomePage() {
   const session = await getAuthSession();
+  const userId = session?.user?.id;
 
-  if (!session) {
-    redirect("/auth/login");
+  let initialClockedIn = false;
+  if (userId) {
+    const open = await prisma.timeEntry.findFirst({
+      where: { userId, clockOut: null },
+      select: { id: true },
+    });
+    initialClockedIn = !!open;
   }
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Welcome, {session.user.name}</h1>
-      <p>Your role is: {session.user.role}</p>
-      <p>Your id is: {session.user.id}</p>
-      <HomePage />
-    </main>
-  );
+
+  return <HomeClient initialClockedIn={initialClockedIn} />;
 }

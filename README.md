@@ -2,19 +2,18 @@
 
 ## A Profile Page that contains:
 
-### Easy access for current week daily and total hours (starting count at monday 5 a.m. Ending Saturday midnight)
-
-### Current requested days off (display dates)
+- Easy access for current week daily and total hours (starting count at monday 5 a.m. Ending Saturday midnight)
+- Current requested days off (display dates)
 
 ## Context for role (i.e. employee, manager, admin)?
 
 ## Admin Ability to click user and see daily hours with total weekly hours added up (for pay)
 
-### No pay involved in app. Only daily hours (in decimal) and weekly hours.
+- No pay involved in app. Only daily hours (in decimal) and weekly hours.
 
 ## Suggestion box
 
-### Details in /components/suggestions
+- Details in /components/suggestions
 
 ## Finish OrderList
 
@@ -39,7 +38,7 @@ The modal:
 - an "item" text input
 - an "add item" that creates another text input
 - date is filled out automatically
-- optional "additional details" + optional "reason"
+- optional "additional details"
 - "send request" button
 
 The list should be well formatted in display sorted by date. The items should be able to be deleted.
