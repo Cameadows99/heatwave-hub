@@ -5,7 +5,11 @@ import BaseCalendar from "../../../components/BaseCalendar";
 import EventModal from "./EventModal";
 import { CalendarEvent } from "@/types/event";
 
-export default function EventsCalendar() {
+export default function EventsCalendar({
+  headerAddon, // 👈 NEW: toggle goes through here
+}: {
+  headerAddon?: React.ReactNode;
+}) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
@@ -22,15 +26,19 @@ export default function EventsCalendar() {
     fetchEvents();
   }, []);
 
-  // Helper to match how you're currently comparing dates (UTC string slice)
-  const ymdUtc = (date: Date) => date.toISOString().slice(0, 10);
+  // Local YYYY-MM-DD (prevents UTC off-by-one)
+  const ymdLocal = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
 
   const getEventsForDate = (date: Date): CalendarEvent[] => {
-    const dateStr = ymdUtc(date);
+    const dateStr = ymdLocal(date);
     return events.filter((e) => e.date === dateStr);
   };
 
-  // Fast lookup for whether a date has content (events). Add time-off later by unioning sets.
   const eventDateSet = useMemo(() => {
     const s = new Set<string>();
     for (const e of events) s.add(e.date);
@@ -77,12 +85,14 @@ export default function EventsCalendar() {
   return (
     <>
       <BaseCalendar
+        headerAddon={headerAddon} // 👈 pass it down
         onDayClick={(date) => setSelectedDate(date)}
-        hasContentForDate={(date) => eventDateSet.has(ymdUtc(date))}
+        hasContentForDate={(date) => eventDateSet.has(ymdLocal(date))}
+        // Desktop/tablet: full content
         renderDayContent={(date) => {
           const list = getEventsForDate(date);
           return list.length > 0 ? (
-            <div className="  text-orange-600 font-medium text-center space-y-1 max-h-[3.5rem] overflow-y-auto">
+            <div className="text-orange-600 font-medium text-center space-y-1 max-h-[3.5rem] overflow-y-auto">
               {list.slice(0, 2).map((ev, idx) => (
                 <div key={idx}>
                   <div className="font-semibold">{ev.title}</div>
@@ -99,9 +109,14 @@ export default function EventsCalendar() {
             </div>
           ) : null;
         }}
+        // Phone: title only (plain string)
+        renderDayMobileContent={(date) => {
+          const list = getEventsForDate(date);
+          return list.length ? list[0].title : null;
+        }}
       />
 
-      {selectedDate && (
+      {selectedDate ? (
         <EventModal
           day={selectedDate.getDate()}
           month={selectedDate.getMonth()}
@@ -111,7 +126,7 @@ export default function EventsCalendar() {
           onAdd={handleAddEvent}
           onDelete={handleDeleteEvent}
         />
-      )}
+      ) : null}
     </>
   );
 }

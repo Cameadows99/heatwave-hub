@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+:root {
+  /* 64px bar + iOS home indicator */
+  --mobile-appbar-h: calc(64px + env(safe-area-inset-bottom));
+}
+
+/* On md+ we don’t need bottom padding (top bar instead) */
+@media (min-width: 768px) {
+  :root {
+    --mobile-appbar-h: 0px;
+  }
+}
+
+/*[#FF622CC] via-[#34DDFF] to-[#FFD2CC]        [#FF522AA] via-[#24CCDD] to-[#FFC2AA] */

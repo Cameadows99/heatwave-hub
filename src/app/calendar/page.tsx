@@ -1,70 +1,66 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import EventsCalendar from "./events-cal/EventsCalendar";
 import HoursCalendar from "./hours-cal/HoursCalendar";
 import TimeOffCalendar from "./time-off/TimeOffCalendar";
-import TimeOffModal from "./time-off/TimeOffModal";
+import ModeToggle, { Mode } from "@/components/ModeToggle";
 
 export default function CalendarPage() {
   const searchParams = useSearchParams();
-  const viewParam = searchParams.get("view") as "events" | "hours" | "time-off";
-  const [mode, setMode] = useState<"events" | "hours" | "time-off">("events");
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const viewParam = (searchParams.get("view") as Mode) ?? "events";
+  const [mode, setMode] = useState<Mode>(viewParam);
 
   const { data: session } = useSession();
   const isAdmin =
     session?.user?.role === "ADMIN" || session?.user?.role === "ULTIMATE_ADMIN";
 
   useEffect(() => {
-    if (viewParam && viewParam !== mode) {
-      setMode(viewParam);
-    }
+    if (viewParam !== mode) setMode(viewParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewParam]);
 
-  return (
-    <div className="p-4 min-h-screen bg-gradient-to-br from-yellow-100 via-orange-100 to-red-200 text-black items-center">
-      <div className="flex justify-center mb-6 relative z-0">
-        <div className="flex gap-3 px-2 py-1">
-          {(["events", "time-off", "hours"] as const).map((value) => {
-            const isActive = mode === value;
-            const label =
-              value === "events"
-                ? "Events"
-                : value === "time-off"
-                ? "Time Off"
-                : "Hours";
+  const handleChange = (next: Mode) => {
+    setMode(next);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", next);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
-            return (
-              <div key={value} className="relative">
-                {isActive && (
-                  <div className="absolute inset-0 -m-1 rounded-full bg-yellow-300 blur-lg opacity-50 z-0"></div>
-                )}
-                <button
-                  onClick={() => setMode(value)}
-                  className={`relative z-10 overflow-hidden px-5 py-2 rounded-full font-semibold text-sm transition-all duration-300 cursor-pointer
-            ${
-              isActive
-                ? "bg-sky-600 text-yellow-300 shadow-md scale-105"
-                : "bg-sky-500/50 text-gray-100/80 hover:bg-sky-300/70 scale-95"
-            }
-          `}
-                  style={{
-                    transform: isActive ? "translateY(-2px)" : "translateY(0)",
-                  }}
-                >
-                  {label}
-                </button>
-              </div>
-            );
-          })}
-        </div>
+  return (
+    // Phone: subtle orange background. Desktop: your original gradient.
+    <div className="min-h-[100svh] sm:min-h-screen bg-orange-50 sm:bg-gradient-to-br sm:from-yellow-100 sm:via-orange-100 sm:to-red-200 text-black flex flex-col">
+      {/* Desktop/tablet toggle bar (phone gets headerAddon inside calendar) */}
+      <div className="hidden sm:flex justify-center pt-4 mb-6">
+        <ModeToggle value={mode} onChange={handleChange} />
       </div>
 
-      {mode === "events" && <EventsCalendar />}
-      {mode === "hours" && <HoursCalendar />}
-      {mode === "time-off" && <TimeOffCalendar isAdmin={isAdmin} />}
+      {/* Calendar area */}
+      <main className="flex-1 w-full flex justify-center items-start sm:items-center px-0 sm:px-4 pb-20 sm:pb-6">
+        {mode === "events" && (
+          <EventsCalendar
+            headerAddon={<ModeToggle value={mode} onChange={handleChange} />}
+          />
+        )}
+
+        {mode === "hours" && (
+          <HoursCalendar
+            headerAddon={<ModeToggle value={mode} onChange={handleChange} />}
+          />
+        )}
+
+        {mode === "time-off" && (
+          <TimeOffCalendar
+            isAdmin={isAdmin}
+            headerAddon={<ModeToggle value={mode} onChange={handleChange} />}
+          />
+        )}
+      </main>
     </div>
   );
 }

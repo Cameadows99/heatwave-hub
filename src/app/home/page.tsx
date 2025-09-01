@@ -16,5 +16,9 @@ export default async function HomePage() {
     initialClockedIn = !!open;
   }
 
-  return <HomeClient initialClockedIn={initialClockedIn} />;
+  return (
+    <main className="pb-[var(--mobile-appbar-h)]">
+      <HomeClient initialClockedIn={initialClockedIn} />
+    </main>
+  );
 }
