@@ -84,37 +84,50 @@ export default function EventsCalendar({
 
   return (
     <>
-      <BaseCalendar
-        headerAddon={headerAddon} // 👈 pass it down
-        onDayClick={(date) => setSelectedDate(date)}
-        hasContentForDate={(date) => eventDateSet.has(ymdLocal(date))}
-        // Desktop/tablet: full content
-        renderDayContent={(date) => {
-          const list = getEventsForDate(date);
-          return list.length > 0 ? (
-            <div className="text-orange-600 font-medium text-center space-y-1 max-h-[3.5rem] overflow-y-auto">
-              {list.slice(0, 2).map((ev, idx) => (
-                <div key={idx}>
-                  <div className="font-semibold">{ev.title}</div>
-                  <div className="text-[0.65rem] font-bold text-gray-700">
-                    {ev.time}
-                  </div>
+      {/* Center so the filter aligns with the calendar below */}
+      <div className="w-full flex justify-center">
+        <div className="w-full max-w-[1000px]">
+          <BaseCalendar
+            // Phone: gently enlarge the toggle to match desktop feel
+            headerAddon={
+              <div className="flex flex-col items-center gap-2">
+                <div className="origin-top w-70 scale-[1] sm:scale-100">
+                  {headerAddon}
                 </div>
-              ))}
-              {list.length > 2 && (
-                <div className="text-xs text-blue-600">
-                  +{list.length - 2} more
+              </div>
+            }
+            onDayClick={(date) => setSelectedDate(date)}
+            hasContentForDate={(date) => eventDateSet.has(ymdLocal(date))}
+            // Desktop/tablet: full content
+            renderDayContent={(date) => {
+              const list = getEventsForDate(date);
+              return list.length > 0 ? (
+                <div className="text-orange-600 font-medium text-center space-y-1 max-h-[3.5rem] overflow-y-auto">
+                  {list.slice(0, 2).map((ev, idx) => (
+                    <div key={idx}>
+                      <div className="font-semibold">{ev.title}</div>
+                      <div className="text-[0.65rem] font-bold text-gray-700">
+                        {ev.time}
+                      </div>
+                    </div>
+                  ))}
+                  {list.length > 2 && (
+                    <div className="text-xs text-blue-600">
+                      +{list.length - 2} more
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ) : null;
-        }}
-        // Phone: title only (plain string)
-        renderDayMobileContent={(date) => {
-          const list = getEventsForDate(date);
-          return list.length ? list[0].title : null;
-        }}
-      />
+              ) : null;
+            }}
+            // Phone: title only (plain string)
+            renderDayMobileContent={(date) => {
+              const list = getEventsForDate(date);
+              return list.length ? list[0].title : null;
+            }}
+          />
+          <div className="mt-10 h-[40px]" aria-hidden />
+        </div>
+      </div>
 
       {selectedDate ? (
         <EventModal

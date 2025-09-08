@@ -2,56 +2,67 @@
 
 import { format } from "date-fns";
 
-interface Entry {
+// ✅ Exported Entry type so HoursCalendar can import it
+export type Entry = {
   id: string;
+  userId: string;
   clockIn: Date;
-  clockOut: Date | null;
-  hours: number;
-}
+  clockOut?: Date;
+  hours: number; // decimal hours
+};
 
-interface Props {
+export default function HoursModal({
+  date,
+  entries,
+  onClose,
+}: {
   date: Date;
   entries: Entry[];
   onClose: () => void;
-}
-
-export default function HoursModal({ date, entries, onClose }: Props) {
-  const formattedDate = format(date, "eeee, MMMM d, yyyy");
-
+}) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center">
-      <div className="bg-white w-[90%] max-w-md p-6 rounded-lg shadow-lg relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative">
+        {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-gray-600 hover:text-red-500 text-lg"
+          className="absolute right-3 top-3 px-2 py-1 rounded-md text-gray-600 hover:bg-zinc-100"
         >
-          ✕
+          ×
         </button>
 
-        <h2 className="text-xl font-bold text-sky-700 mb-4">{formattedDate}</h2>
+        {/* Header */}
+        <h2 className="text-xl font-bold text-orange-600 mb-4">
+          Hours for {format(date, "MMM d, yyyy")}
+        </h2>
 
-        {entries.length > 0 ? (
-          <div className="space-y-4">
-            {entries.map((entry, i) => (
-              <div key={entry.id + i} className="border-b pb-2">
-                <div className="text-sm text-gray-600">
-                  <span className="font-semibold">In:</span>{" "}
-                  {format(new Date(entry.clockIn), "h:mm a")}
-                </div>
-                <div className="text-sm text-gray-600">
-                  <span className="font-semibold">Out:</span>{" "}
-                  {entry.clockOut
-                    ? format(new Date(entry.clockOut), "h:mm a")
-                    : "Still clocked in"}
-                </div>
-                <div className="text-sm text-green-700 font-semibold">
-                  {entry.hours.toFixed(2)} hrs
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Entries list */}
+        {entries.length === 0 ? (
+          <p className="text-sm text-gray-500">No hours recorded.</p>
         ) : (
-          <p className="text-gray-600 text-center">No entries for this day.</p>
+          <ul className="divide-y divide-gray-200">
+            {entries.map((e) => (
+              <li key={e.id} className="py-2 flex justify-between items-center">
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {format(e.clockIn, "h:mm a")} –{" "}
+                    {e.clockOut ? format(e.clockOut, "h:mm a") : "In progress"}
+                  </div>
+                  <div className="text-xs text-gray-500">User: {e.userId}</div>
+                </div>
+                <div className="text-sm font-semibold text-[#244C77]">
+                  {e.hours.toFixed(2)}h
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Footer total */}
+        {entries.length > 0 && (
+          <div className="mt-4 text-right font-bold text-[#244C77]">
+            Total: {entries.reduce((sum, e) => sum + e.hours, 0).toFixed(2)}h
+          </div>
         )}
       </div>
     </div>

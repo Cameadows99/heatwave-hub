@@ -1,34 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 
 export async function POST() {
-  const session = await getAuthSession();
+  const session = await getServerSession();
+  if (!session?.user?.id)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!session?.user?.id) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  // Find the most recent clock-in with no clock-out yet
-  const latestEntry = await prisma.timeEntry.findFirst({
-    where: {
-      userId: session.user.id,
-      clockOut: null,
-    },
-    orderBy: {
-      clockIn: "desc",
-    },
+  const userId = session.user.id;
+  const open = await prisma.timeEntry.findFirst({
+    where: { userId, clockOut: null },
   });
+  if (!open)
+    return NextResponse.json({ error: "No open entry" }, { status: 400 });
 
-  if (!latestEntry) {
-    return new Response("No active clock-in found", { status: 400 });
-  }
-
-  // Update it with the current time
-  const updatedEntry = await prisma.timeEntry.update({
-    where: { id: latestEntry.id },
+  const entry = await prisma.timeEntry.update({
+    where: { id: open.id },
     data: { clockOut: new Date() },
   });
 
-  return new Response(JSON.stringify(updatedEntry), { status: 200 });
+  return NextResponse.json(entry);
 }

@@ -60,6 +60,7 @@ export default function BaseCalendar({
         {/* Card chrome only on ≥sm */}
         <div className="sm:rounded-2xl sm:border sm:border-white/40 sm:bg-white/70 sm:backdrop-blur-md sm:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] px-2 sm:px-5 py-3 sm:py-4">
           {/* Header */}
+          <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4"></header>
           <div className="mb-2 sm:mb-5 flex items-center justify-between">
             <button
               onClick={goPrev}

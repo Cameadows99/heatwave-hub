@@ -1,20 +1,25 @@
 import { prisma } from "@/lib/prisma";
-import { getAuthSession } from "@/lib/auth";
+// src/app/api/time/clock-in/route.ts
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 
 export async function POST() {
-  const session = await getAuthSession();
-  console.log("SESSION: ", session);
+  const session = await getServerSession();
+  if (!session?.user?.id)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!session?.user?.id) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const userId = session.user.id;
 
-  const timeEntry = await prisma.timeEntry.create({
-    data: {
-      userId: session.user.id, // this must match a real User.id in the DB
-      clockIn: new Date(),
-    },
+  // ensure no open entry
+  const open = await prisma.timeEntry.findFirst({
+    where: { userId, clockOut: null },
+  });
+  if (open)
+    return NextResponse.json({ error: "Already clocked in" }, { status: 400 });
+
+  const entry = await prisma.timeEntry.create({
+    data: { userId, clockIn: new Date(), source: "APP" },
   });
 
-  return new Response(JSON.stringify(timeEntry), { status: 200 });
+  return NextResponse.json(entry);
 }

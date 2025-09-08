@@ -6,76 +6,93 @@ import TimeOffModal from "./TimeOffModal";
 import { format, addDays } from "date-fns";
 
 type Status = "PENDING" | "APPROVED" | "DENIED";
+
 type Item = {
   id: string;
   userId: string;
   reason: string;
   status: Status;
-  startDate: string;
-  endDate: string;
+  startDate: string; // ISO
+  endDate: string; // ISO
   user?: { id: string; name: string | null } | null;
 };
-type Filter = "all" | "approved" | "pending" | "denied";
 
 export default function TimeOffCalendar({
-  isAdmin,
+  isAdmin = false,
   headerAddon,
 }: {
-  isAdmin: boolean;
+  isAdmin?: boolean;
   headerAddon?: React.ReactNode;
 }) {
   const [items, setItems] = useState<Item[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [filter, setFilter] = useState<Filter>("all");
 
-  useEffect(() => {
-    (async () => {
-      const res = await fetch("/api/timeoff");
-      const data: Item[] = await res.json();
-      setItems(data);
-    })();
-  }, []);
+  // "all" | "approved" | "pending" | "denied"
+  const [filter, setFilter] = useState<
+    "all" | "approved" | "pending" | "denied"
+  >("all");
 
+  // --- helpers ---
   const ymd = (d: Date) => format(d, "yyyy-MM-dd");
 
-  const coverSet = useMemo(() => {
-    const out = new Set<string>();
-    for (const r of items) {
-      if (filter !== "all" && r.status.toLowerCase() !== filter) continue;
-      let cur = new Date(r.startDate);
-      const end = new Date(r.endDate);
-      cur.setHours(0, 0, 0, 0);
-      end.setHours(0, 0, 0, 0);
-      while (cur <= end) {
-        out.add(ymd(cur));
-        cur = addDays(cur, 1);
-      }
-    }
-    return out;
-  }, [items, filter]);
-
-  const dayList = (date: Date) => {
-    const d0 = new Date(date);
-    d0.setHours(0, 0, 0, 0);
-    const raw = items.filter((r) => {
-      const a = new Date(r.startDate);
-      const b = new Date(r.endDate);
-      a.setHours(0, 0, 0, 0);
-      b.setHours(0, 0, 0, 0);
-      return a <= d0 && d0 <= b;
-    });
-    return filter === "all"
-      ? raw
-      : raw.filter((r) => r.status.toLowerCase() === filter);
-  };
-
-  // ✅ green for approved, yellow for pending, orange for denied
   const colorFor = (status: Status) => {
     if (status === "APPROVED") return "text-green-600";
     if (status === "PENDING") return "text-yellow-600";
     return "text-orange-600";
   };
 
+  // Expand each request into every date it covers (inclusive)
+  const expandedDates = useMemo(() => {
+    const map: Record<string, Item[]> = {};
+    for (const it of items) {
+      const s = new Date(it.startDate);
+      const e = new Date(it.endDate);
+      // guard: if invalid order, swap
+      const start = s <= e ? s : e;
+      const end = s <= e ? e : s;
+
+      let cur = new Date(start);
+      while (cur <= end) {
+        const key = ymd(cur);
+        (map[key] ||= []).push(it);
+        cur = addDays(cur, 1);
+      }
+    }
+    return map;
+  }, [items]);
+
+  // quick set for "hasContentForDate"
+  const coverSet = useMemo(
+    () => new Set(Object.keys(expandedDates)),
+    [expandedDates]
+  );
+
+  // Filtered per-day list
+  const dayList = (date: Date) => {
+    const key = ymd(date);
+    const list = expandedDates[key] || [];
+    if (filter === "all") return list;
+    if (filter === "approved")
+      return list.filter((r) => r.status === "APPROVED");
+    if (filter === "pending") return list.filter((r) => r.status === "PENDING");
+    return list.filter((r) => r.status === "DENIED");
+  };
+
+  // initial fetch + refetch after create/close in modal
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/timeoff");
+        if (!res.ok) return;
+        const data: Item[] = await res.json();
+        setItems(data);
+      } catch (e) {
+        console.error("Failed to fetch time off:", e);
+      }
+    })();
+  }, []);
+
+  // --- UI: filter buttons below the calendar ---
   const FilterButtons = (
     <div className="flex gap-1 rounded-xl ring-1 ring-zinc-300 bg-white/80 px-1 py-1">
       {(
@@ -86,16 +103,17 @@ export default function TimeOffCalendar({
           ["denied", "Denied"],
         ] as const
       ).map(([key, label]) => {
-        const active = filter === (key as Filter);
+        const active = filter === key;
         return (
           <button
             key={key}
-            onClick={() => setFilter(key as Filter)}
-            className={`px-2 py-1 text-[11px] rounded-lg transition ${
+            onClick={() => setFilter(key)}
+            className={[
+              "px-3 py-1 rounded-lg text-sm font-semibold transition",
               active
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-700 hover:bg-zinc-100"
-            }`}
+                ? "bg-zinc-900 text-yellow-200"
+                : "bg-white hover:bg-zinc-100 text-zinc-700",
+            ].join(" ")}
           >
             {label}
           </button>
@@ -120,14 +138,15 @@ export default function TimeOffCalendar({
             }
             onDayClick={(date) => setSelectedDate(date)}
             hasContentForDate={(date) => coverSet.has(ymd(date))}
-            // Desktop/tablet rich content
+            // Desktop/tablet rich content — matches Events/Hours wrapper
             renderDayContent={(date) => {
               const list = dayList(date);
               if (!list.length) return null;
               const show = list.slice(0, 2);
               const extra = list.length - show.length;
+
               return (
-                <div className="text-center space-y-1 max-h-[3.5rem] overflow-y-auto">
+                <div className="text-orange-600 font-medium text-center space-y-1 max-h-[3.5rem] overflow-y-auto">
                   {show.map((r) => (
                     <div key={r.id} className="truncate">
                       <div
@@ -149,17 +168,12 @@ export default function TimeOffCalendar({
                 </div>
               );
             }}
-            // 📱 Phone: return a NODE so we can color the name
+            // 📱 Phone: plain string (aligns with Events/Hours)
             renderDayMobileContent={(date) => {
               const list = dayList(date);
               if (!list.length) return null;
               const first = list[0];
-              const name = first.user?.name ?? "Request";
-              return (
-                <span className={`font-semibold ${colorFor(first.status)}`}>
-                  {name}
-                </span>
-              );
+              return first.user?.name ?? "Request";
             }}
           />
 
@@ -176,9 +190,14 @@ export default function TimeOffCalendar({
           isAdmin={isAdmin}
           onClose={() => setSelectedDate(null)}
           onCreated={async () => {
-            const res = await fetch("/api/timeoff");
-            const data: Item[] = await res.json();
-            setItems(data);
+            try {
+              const res = await fetch("/api/timeoff");
+              if (!res.ok) return;
+              const data: Item[] = await res.json();
+              setItems(data);
+            } catch (e) {
+              console.error("Failed to refresh time off:", e);
+            }
           }}
         />
       )}

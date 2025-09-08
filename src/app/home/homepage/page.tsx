@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Permanent_Marker, Share_Tech_Mono } from "next/font/google";
 import { useSession } from "next-auth/react";
 
@@ -9,47 +9,99 @@ const markerFont = Permanent_Marker({ subsets: ["latin"], weight: "400" });
 const shareTechMono = Share_Tech_Mono({ subsets: ["latin"], weight: "400" });
 
 export default function HomePage() {
+  const { data: session, status } = useSession(); // status: "loading" | "authenticated" | "unauthenticated"
+
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isClockedIn, setIsClockedIn] = useState(false);
+  const [openSince, setOpenSince] = useState<Date | null>(null);
   const [message, setMessage] = useState("");
-  const { data: session } = useSession();
+  const [submitting, setSubmitting] = useState(false);
 
   const formattedTime = currentTime.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
 
+  // live clock tick
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(interval);
+    const id = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(id);
   }, []);
 
+  // fetch status from /api/time/status when session becomes available
+  const refreshStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/time/status", { cache: "no-store" });
+      if (!res.ok) throw new Error("status not ok");
+      const data: { clockedIn: boolean; openSince?: string | null } =
+        await res.json();
+      setIsClockedIn(!!data.clockedIn);
+      setOpenSince(data.openSince ? new Date(data.openSince) : null);
+    } catch {
+      // If status fails, avoid flipping UI; just show a soft message once.
+      setMessage("Could not load clock status.");
+      setTimeout(() => setMessage(""), 4000);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      refreshStatus();
+    } else if (status === "unauthenticated") {
+      setIsClockedIn(false);
+      setOpenSince(null);
+    }
+  }, [status, refreshStatus]);
+
   const handleClockToggle = async () => {
-    if (!session?.user?.email) return;
+    if (status !== "authenticated") {
+      setMessage("Please sign in to clock in/out.");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
 
+    // choose endpoint based on current state
     const action = isClockedIn ? "clock-out" : "clock-in";
-    const res = await fetch(`/api/time/${action}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: session.user.email }),
-    });
 
-    if (res.ok) {
+    try {
+      setSubmitting(true);
+      const res = await fetch(`/api/time/${action}`, { method: "POST" });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg =
+          typeof err?.error === "string"
+            ? err.error
+            : "Something went wrong. Please try again.";
+        setMessage(msg);
+        setTimeout(() => setMessage(""), 4000);
+        return;
+      }
+
+      // success — refresh status from server to avoid client drift
+      await refreshStatus();
+
       const displayAction = isClockedIn ? "Clocked out" : "Clocked in";
-      setIsClockedIn(!isClockedIn);
       setMessage(
-        `${displayAction} at ${currentTime.toLocaleTimeString([], {
+        `${displayAction} at ${new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         })}`
       );
       setTimeout(() => setMessage(""), 4000);
-    } else {
-      setMessage("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  // optional helper: show how long user has been clocked in
+  const openSinceLabel =
+    isClockedIn && openSince
+      ? `Since ${openSince.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`
+      : "";
 
   return (
     <main className="relative min-h-screen flex flex-col items-center overflow-hidden">
@@ -167,6 +219,10 @@ export default function HomePage() {
           >
             "People who feel good about themselves produce good results."
           </p>
+          {/* optional subtext shows since when */}
+          {openSinceLabel && (
+            <p className="mt-2 text-xs text-yellow-200/90">{openSinceLabel}</p>
+          )}
         </section>
 
         {/* Clock In/Out Button */}
@@ -179,9 +235,10 @@ export default function HomePage() {
             >
               <button
                 onClick={handleClockToggle}
-                className="w-full font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transition-transform text-white bg-orange-500 hover:bg-orange-700"
+                disabled={submitting}
+                className="w-full font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transition-transform text-white bg-orange-500 hover:bg-orange-700 disabled:opacity-60 disabled:hover:scale-100"
               >
-                Clock Out
+                {submitting ? "Working..." : "Clock Out"}
               </button>
             </div>
             <div
@@ -191,14 +248,21 @@ export default function HomePage() {
             >
               <button
                 onClick={handleClockToggle}
-                className="w-full font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transition-transform text-white bg-sky-500 hover:bg-sky-700"
+                disabled={submitting || status !== "authenticated"}
+                className="w-full font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transition-transform text-white bg-sky-500 hover:bg-sky-700 disabled:opacity-60 disabled:hover:scale-100"
               >
-                Clock In
+                {status !== "authenticated"
+                  ? "Sign in required"
+                  : submitting
+                  ? "Working..."
+                  : "Clock In"}
               </button>
             </div>
           </div>
           {message && (
-            <p className="mt-2 text-green-700 font-medium text-sm">{message}</p>
+            <p className="mt-2 text-green-700 font-medium text-sm text-center px-4">
+              {message}
+            </p>
           )}
         </section>
 
