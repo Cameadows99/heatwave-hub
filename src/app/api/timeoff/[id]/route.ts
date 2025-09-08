@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession } from "@/lib/auth"; // ⬅️ adjust if needed
+import authOptions from "@/lib/auth";
+import { getServerSession } from "next-auth";
 
 // PATCH /api/timeoff/:id
 // body: { status: "PENDING" | "APPROVED" | "DENIED" }
@@ -8,7 +9,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getAuthSession();
+  const session = await getServerSession(authOptions);
   const role = session?.user?.role as string | undefined;
   if (!role || !["ADMIN", "MANAGER"].includes(role)) {
     return new NextResponse("Forbidden", { status: 403 });
@@ -32,7 +33,7 @@ export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getAuthSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.id)
     return new NextResponse("Unauthorized", { status: 401 });
 

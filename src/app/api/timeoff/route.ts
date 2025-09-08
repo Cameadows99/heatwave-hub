@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseISO, startOfDay, endOfDay, subDays } from "date-fns";
 import type { Prisma } from "@/generated/prisma";
-import { getAuthSession } from "@/lib/auth"; // same helper you use in [id]/route.ts
+import authOptions from "@/lib/auth";
+import { getServerSession } from "next-auth";
 
 // Helper: convert "yyyy-MM-dd" (from <input type="date">) to a *local* midnight Date
 function localYmdToDate(ymd: string) {
@@ -16,7 +17,7 @@ function localYmdToDate(ymd: string) {
 
 export async function POST(req: Request) {
   try {
-    const session = await getAuthSession();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }

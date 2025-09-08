@@ -1,10 +1,11 @@
 // src/app/home/page.tsx  (SERVER component)
 import { prisma } from "@/lib/prisma";
-import { getAuthSession } from "@/lib/auth";
+import authOptions from "@/lib/auth";
+import { getServerSession } from "next-auth";
 import HomeClient from "./HomeClient";
 
 export default async function HomePage() {
-  const session = await getAuthSession();
+  const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
 
   let initialClockedIn = false;
