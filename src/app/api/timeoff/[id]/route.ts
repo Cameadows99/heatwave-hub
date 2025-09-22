@@ -3,8 +3,6 @@ import { prisma } from "@/lib/prisma";
 import authOptions from "@/lib/auth";
 import { getServerSession } from "next-auth";
 
-// PATCH /api/timeoff/:id
-// body: { status: "PENDING" | "APPROVED" | "DENIED" }
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
