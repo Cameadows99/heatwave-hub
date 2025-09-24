@@ -6,35 +6,57 @@ import { prisma } from "@/lib/prisma";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  // JWT strategy: carry id/role via jwt → session
+  session: { strategy: "jwt" },
   providers: [
     Credentials({
       name: "Credentials",
       credentials: {
-        email: { label: "Email" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(creds) {
-        if (!creds?.email || !creds?.password) return null;
+        const email = creds?.email?.toString().trim().toLowerCase();
+        const password = creds?.password?.toString();
+        if (!email || !password) return null;
+
         const user = await prisma.user.findUnique({
-          where: { email: creds.email },
+          where: { email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            password: true,
+          },
         });
-        if (!user) return null;
-        const ok = await compare(creds.password, user.password);
+        if (!user?.password) return null;
+
+        const ok = await compare(password, user.password);
         if (!ok) return null;
-        // return a minimal object (safe for JWT)
-        return { id: user.id, name: user.name, email: user.email };
+
+        // Return minimal shape; jwt() will copy id/role to token
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        } as any;
       },
     }),
   ],
-  session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) (token as any).id = (user as any).id;
+      if (user) {
+        (token as any).id = (user as any).id;
+        (token as any).role = (user as any).role;
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = (token as any).id ?? null;
+        (session.user as any).role = (token as any).role ?? null;
       }
       return session;
     },

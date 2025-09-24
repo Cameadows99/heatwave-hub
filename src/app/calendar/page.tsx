@@ -51,6 +51,7 @@ export default function CalendarPage() {
         {mode === "hours" && (
           <HoursCalendar
             headerAddon={<ModeToggle value={mode} onChange={handleChange} />}
+            fetchUrl="/api/time/user-entries?days=30" // ✅ explicit
           />
         )}
 
