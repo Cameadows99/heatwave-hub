@@ -7,24 +7,19 @@ type OrderRequest = {
   id: string;
   requester: { name: string };
   createdAt: string;
-  items: string[]; // stored as "ItemName  x3" (two NBSPs)
+  items: string[];
   details?: string;
   reason?: string;
   ordered: boolean;
 };
 
-// ---------- helpers for qty parsing/formatting ----------
-// ---------- helpers for qty parsing/formatting ----------
 const NBSP = "\u00A0";
 
-// Same pattern your modal uses: trailing (spaces or NBSP) + x + optional spaces + digits
 const NAME_QTY_RE = /^(.*?)(?:[\s\u00A0]*[xX]\s*(\d+))\s*$/;
 
-// Parse using the modal’s rule
 function parseItemString(raw: string): { name: string; qty: number } {
   const s = String(raw ?? "").trim();
 
-  // Try multiple end-of-string patterns, in order of likelihood
   const patterns: RegExp[] = [
     /^(.*?)(?:[\s\u00A0]*[xX×]\s*(\d+))\s*$/, // "Item  x3", "Item × 3"
     /^(.*?)[\s\u00A0]*qty[\s:]*([0-9]+)\s*$/i, // "Item qty:3" or "Item qty 3"
@@ -91,7 +86,7 @@ export default function OrderRequestsPage() {
       body: JSON.stringify({ ordered: true }),
     });
     setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ordered: true } : r))
+      prev.map((r) => (r.id === id ? { ...r, ordered: true } : r)),
     );
   };
 
@@ -102,7 +97,7 @@ export default function OrderRequestsPage() {
       body: JSON.stringify({ ordered: false }),
     });
     setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ordered: false } : r))
+      prev.map((r) => (r.id === id ? { ...r, ordered: false } : r)),
     );
   };
 
@@ -157,8 +152,8 @@ export default function OrderRequestsPage() {
               details: payload.details ?? undefined,
               reason: payload.reason ?? undefined,
             }
-          : r
-      )
+          : r,
+      ),
     );
     cancelEdit();
   };
@@ -202,7 +197,7 @@ export default function OrderRequestsPage() {
         const inRequester = r.requester?.name?.toLowerCase().includes(q);
         const inDetails = r.details?.toLowerCase().includes(q);
         const inItems = r.items.some((it) =>
-          parseItemString(it).name.toLowerCase().includes(q)
+          parseItemString(it).name.toLowerCase().includes(q),
         );
         return inRequester || inDetails || inItems;
       });
@@ -352,7 +347,7 @@ export default function OrderRequestsPage() {
                           }}
                           className="text-xs text-amber-600 underline hover:text-amber-800"
                         >
-                          Cancel Order
+                          Mark as pending
                         </button>
                       ) : (
                         <button
@@ -466,7 +461,7 @@ export default function OrderRequestsPage() {
                                 onChange={(e) => {
                                   const next = [...editItemNames];
                                   next[idx] = stripQtyFromNameLoose(
-                                    e.target.value
+                                    e.target.value,
                                   ); // keep name clean, no trim while typing
                                   setEditItemNames(next);
                                 }}
@@ -482,7 +477,7 @@ export default function OrderRequestsPage() {
                                 onChange={(e) => {
                                   const q = Math.max(
                                     1,
-                                    Math.floor(Number(e.target.value) || 1)
+                                    Math.floor(Number(e.target.value) || 1),
                                   );
                                   const next = [...editQuantities];
                                   next[idx] = q;

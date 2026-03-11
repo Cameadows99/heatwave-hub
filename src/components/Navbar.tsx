@@ -6,7 +6,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useMemo } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
-// If you saved the tray from earlier:
 import ProfileTray from "@/components/ProfileTray"; // adjust path if needed
 
 // tiny class combiner (avoid extra deps)

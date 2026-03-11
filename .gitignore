@@ -48,3 +48,4 @@ pnpm-lock.yaml
 dist
 out
 
+.env*.local
