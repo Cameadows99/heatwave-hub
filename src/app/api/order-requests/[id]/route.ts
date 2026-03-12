@@ -13,10 +13,12 @@ export async function DELETE(
 // PATCH: mark as ordered
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
+
   const updated = await prisma.orderRequest.update({
-    where: { id: params.id },
+    where: { id },
     data: { ordered: true },
   });
 
