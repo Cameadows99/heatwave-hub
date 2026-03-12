@@ -3,15 +3,12 @@ import { NextResponse } from "next/server";
 
 // DELETE: remove a request
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } },
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const deleted = await prisma.orderRequest.delete({
-    where: { id: params.id },
-  });
-
-  return NextResponse.json(deleted);
-}
+  const {id} = await params;
+  return NextResponse.json({id})
+  };
 
 // PATCH: mark as ordered
 export async function PATCH(
