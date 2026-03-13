@@ -5,8 +5,10 @@ import { getServerSession } from "next-auth";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
+
   const session = await getServerSession(authOptions);
   const role = session?.user?.role as string | undefined;
   if (!role || !["ADMIN", "MANAGER"].includes(role)) {
@@ -18,7 +20,7 @@ export async function PATCH(
   if (!status) return new NextResponse("Missing status", { status: 400 });
 
   const updated = await prisma.timeOffRequest.update({
-    where: { id: params.id },
+    where: { id },
     data: { status },
     include: { user: true },
   });
@@ -29,14 +31,17 @@ export async function PATCH(
 // DELETE /api/timeoff/:id
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
+
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id)
+  if (!session?.user?.id) {
     return new NextResponse("Unauthorized", { status: 401 });
+  }
 
   const target = await prisma.timeOffRequest.findUnique({
-    where: { id: params.id },
+    where: { id },
     select: { userId: true },
   });
   if (!target) return new NextResponse("Not found", { status: 404 });
@@ -45,9 +50,10 @@ export async function DELETE(
   const role = session.user.role as string | undefined;
   const isPriv = !!role && ["ADMIN", "MANAGER"].includes(role);
 
-  if (!isOwner && !isPriv)
+  if (!isOwner && !isPriv) {
     return new NextResponse("Forbidden", { status: 403 });
+  }
 
-  await prisma.timeOffRequest.delete({ where: { id: params.id } });
+  await prisma.timeOffRequest.delete({ where: { id } });
   return new NextResponse(null, { status: 204 });
 }

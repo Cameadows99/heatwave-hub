@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { userId: string } }
+  context: { params: { userId: string } },
 ) {
-  const { userId } = await context.params; // ✅ await here is the fix
+  const { userId } = await context.params;
 
   if (!userId) {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });

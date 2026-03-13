@@ -1,26 +1,25 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
 
-// DELETE: remove a request
-export async function DELETE(
+export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ userId: string }> },
 ) {
-  const { id } = await params;
-  return NextResponse.json({ id });
-}
+  const { userId } = await params;
 
-// PATCH: mark as ordered
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const { id } = await params;
+  if (!userId) {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  }
 
-  const updated = await prisma.orderRequest.update({
-    where: { id },
-    data: { ordered: true },
-  });
+  try {
+    const rsvps = await prisma.rsvp.findMany({
+      where: { userId },
+      select: { eventId: true },
+    });
 
-  return NextResponse.json(updated);
+    return NextResponse.json(rsvps);
+  } catch (err) {
+    console.error("Failed to fetch RSVPs:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
 }
