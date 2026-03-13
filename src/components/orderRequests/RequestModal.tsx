@@ -17,14 +17,11 @@ export default function RequestModal({
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // --- helpers: keep names clean while typing; format on submit ---
   const NBSP = "\u00A0";
 
-  // Loose, non-trimming sanitizer for typing: only strips trailing " xN"
   const stripQtyFromNameLoose = (raw: string) =>
     (raw ?? "").replace(/[\s\u00A0]*[xX]\s*\d+\s*$/, "");
 
-  // Submit-time: trim then append "  xN" (two NBSPs) when qty > 1
   const formatItemString = (name: string, qty: number) => {
     const clean = (name ?? "").trim();
     const q = Math.max(1, Math.floor(qty || 1));
@@ -34,7 +31,7 @@ export default function RequestModal({
 
   const handleItemChange = (index: number, value: string) => {
     const copy = [...items];
-    copy[index] = stripQtyFromNameLoose(value); // no trim while typing
+    copy[index] = stripQtyFromNameLoose(value);
     setItems(copy);
   };
 

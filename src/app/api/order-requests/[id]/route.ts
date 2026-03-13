@@ -1,14 +1,14 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 
 // DELETE: remove a request
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const {id} = await params;
-  return NextResponse.json({id})
-  };
+  const { id } = await params;
+  return NextResponse.json({ id });
+}
 
 // PATCH: mark as ordered
 export async function PATCH(
