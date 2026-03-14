@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json().catch(() => ({} as any));
+    const body = await req.json().catch(() => ({}) as any);
     const startDateStr = body?.startDate as string | undefined; // e.g. "2025-08-24"
     const endDateStr = body?.endDate as string | undefined;
     const reason = (body?.reason as string | undefined)?.trim();
