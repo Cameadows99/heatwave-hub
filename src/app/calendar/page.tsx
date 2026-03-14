@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import EventsCalendar from "./events-cal/EventsCalendar";
@@ -8,7 +8,7 @@ import HoursCalendar from "./hours-cal/HoursCalendar";
 import TimeOffCalendar from "./time-off/TimeOffCalendar";
 import ModeToggle, { Mode } from "@/components/ModeToggle";
 
-export default function CalendarPage() {
+function CalendarPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -22,8 +22,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     if (viewParam !== mode) setMode(viewParam);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewParam]);
+  }, [viewParam, mode]);
 
   const handleChange = (next: Mode) => {
     setMode(next);
@@ -33,14 +32,11 @@ export default function CalendarPage() {
   };
 
   return (
-    // Phone: subtle orange background. Desktop: your original gradient.
     <div className="min-h-[100svh] sm:min-h-screen bg-orange-50 sm:bg-gradient-to-br sm:from-yellow-100 sm:via-orange-100 sm:to-red-200 text-black flex flex-col">
-      {/* Desktop/tablet toggle bar (phone gets headerAddon inside calendar) */}
       <div className="hidden sm:flex justify-center pt-4 mb-6">
         <ModeToggle value={mode} onChange={handleChange} />
       </div>
 
-      {/* Calendar area */}
       <main className="flex-1 w-full flex justify-center items-start sm:items-center px-0 sm:px-4 pb-20 sm:pb-6">
         {mode === "events" && (
           <EventsCalendar
@@ -51,7 +47,7 @@ export default function CalendarPage() {
         {mode === "hours" && (
           <HoursCalendar
             headerAddon={<ModeToggle value={mode} onChange={handleChange} />}
-            fetchUrl="/api/time/user-entries?days=30" // ✅ explicit
+            fetchUrl="/api/time/user-entries?days=30"
           />
         )}
 
@@ -63,5 +59,13 @@ export default function CalendarPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <CalendarPageContent />
+    </Suspense>
   );
 }
