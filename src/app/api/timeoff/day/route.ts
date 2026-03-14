@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseISO, startOfDay, endOfDay, subDays } from "date-fns";
-import type { Prisma } from "@/generated/prisma";
-
+import { Prisma } from "@prisma/client";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const dateStr = searchParams.get("date");
