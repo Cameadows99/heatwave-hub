@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseISO, startOfDay, endOfDay, subDays } from "date-fns";
-import type { Prisma } from "@/generated/prisma";
+import { Prisma } from "@prisma/client";
 import authOptions from "@/lib/auth";
 import { getServerSession } from "next-auth";
 
