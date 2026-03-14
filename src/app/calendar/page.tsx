@@ -18,7 +18,7 @@ export default function CalendarPage() {
 
   const { data: session } = useSession();
   const isAdmin =
-    session?.user?.role === "ADMIN" || session?.user?.role === "ULTIMATE_ADMIN";
+    session?.user?.role === "ADMIN" || session?.user?.role === "MANAGER";
 
   useEffect(() => {
     if (viewParam !== mode) setMode(viewParam);
