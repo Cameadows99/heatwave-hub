@@ -11,7 +11,7 @@ async function main() {
     update: {},
     create: {
       name: "Chad Buck",
-      email: "chadbuck@heatwave.com",
+      email: "Adminlogin@heatwave.com",
       password: hashedPassword,
       role: "ADMIN",
       team: "Management",
