@@ -4,15 +4,34 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const hashedPassword = await bcrypt.hash("admin123", 10);
+  const adminEmail = "adminlogin@heatwave.com";
+  const employeeEmail = "slim@heatwave.com";
 
-  const admin = await prisma.user.upsert({
-    where: { email: "Adminlogin@heatwave.com" },
-    update: {},
-    create: {
+  const hashedAdminPassword = await bcrypt.hash("admin123", 10);
+  const hashedEmployeePassword = await bcrypt.hash("slimm123", 10);
+
+  // Clean dependent demo data first so reseeding doesn't duplicate records
+  await prisma.orderRequest.deleteMany();
+  await prisma.timeEntry.deleteMany();
+  await prisma.timeOffRequest.deleteMany();
+  await prisma.rsvp.deleteMany();
+  await prisma.event.deleteMany();
+
+  // Delete demo users if they already exist with any old/case-variant data
+  await prisma.user.deleteMany({
+    where: {
+      email: {
+        in: [adminEmail, employeeEmail],
+        mode: "insensitive",
+      },
+    },
+  });
+
+  const admin = await prisma.user.create({
+    data: {
       name: "Chad Buck",
-      email: "Adminlogin@heatwave.com",
-      password: hashedPassword,
+      email: adminEmail,
+      password: hashedAdminPassword,
       role: "ADMIN",
       team: "Management",
     },
@@ -21,8 +40,8 @@ async function main() {
   const employee = await prisma.user.create({
     data: {
       name: "Slimenem",
-      email: "slim@heatwave.com",
-      password: await bcrypt.hash("slimm123", 10),
+      email: employeeEmail,
+      password: hashedEmployeePassword,
       role: "EMPLOYEE",
       team: "Construction",
     },
@@ -32,13 +51,13 @@ async function main() {
     data: [
       {
         title: "Team BBQ",
-        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         location: "Warehouse Lot",
         description: "Grill and chill with the whole crew.",
       },
       {
         title: "Pool Maintenance Workshop",
-        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
         location: "Conference Room A",
         description: "Best practices for spring maintenance season.",
       },
@@ -67,8 +86,8 @@ async function main() {
   await prisma.timeEntry.create({
     data: {
       userId: admin.id,
-      clockIn: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-      clockOut: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+      clockIn: new Date(Date.now() - 3 * 60 * 60 * 1000),
+      clockOut: new Date(Date.now() - 1 * 60 * 60 * 1000),
     },
   });
 
