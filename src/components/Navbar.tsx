@@ -1,4 +1,3 @@
-// src/components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
@@ -6,14 +5,14 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useMemo } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
-import ProfileTray from "@/components/ProfileTray"; // adjust path if needed
+import ProfileTray from "@/components/ProfileTray";
 
-// tiny class combiner (avoid extra deps)
+// tiny class combiner
 function cn(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
-// Simple inline icons (no external lib)
+// Simple inline icons
 function HomeIcon({ active }: { active?: boolean }) {
   return (
     <svg
@@ -29,7 +28,8 @@ function HomeIcon({ active }: { active?: boolean }) {
     </svg>
   );
 }
-function CalendarIcon({ active }: { active?: boolean }) {
+
+function CalendarIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
       <path
@@ -41,6 +41,7 @@ function CalendarIcon({ active }: { active?: boolean }) {
     </svg>
   );
 }
+
 function BoxIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
@@ -53,18 +54,7 @@ function BoxIcon() {
     </svg>
   );
 }
-function HammerIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
-      <path
-        d="M5 22l7-7M14 6l4-4 3 3-4 4M3 12l7 1 4-4-3-3-4 4-4 2z"
-        stroke="currentColor"
-        strokeWidth="2"
-        fill="none"
-      />
-    </svg>
-  );
-}
+
 function UserIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
@@ -82,20 +72,18 @@ export default function Navbar() {
   const pathname = usePathname();
   const [profileOpen, setProfileOpen] = useState(false);
 
-  // active state for highlighting
   const isActive = (href: string) => pathname === href;
 
-  // Derive user display
   const userLabel = useMemo(
     () => session?.user?.name ?? session?.user?.email ?? "You",
     [session],
   );
+
   const isAdmin = useMemo(
     () => session?.user?.role === "ADMIN" || session?.user?.role === "MANAGER",
     [session],
   );
 
-  // Shared nav items
   const items = [
     { href: "/home", label: "Home", icon: HomeIcon },
     { href: "/calendar", label: "Calendar", icon: CalendarIcon },
@@ -112,25 +100,27 @@ export default function Navbar() {
         )}
       >
         <div className="mx-auto max-w-6xl px-4">
-          <nav className="flex h-16 items-center justify-between">
+          <nav className="relative flex h-16 items-center">
             {/* Left: brand */}
-            <Link href="/" className="flex items-center gap-3">
-              <div className="relative h-9 w-9">
-                <Image
-                  src="/logos/heat-sun.png"
-                  alt="Heatwave"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <span className="text-lg font-semibold tracking-wide">
-                Heatwave
-              </span>
-            </Link>
+            <div className="flex items-center">
+              <Link href="/" className="flex items-center gap-3">
+                <div className="relative h-9 w-9">
+                  <Image
+                    src="/logos/heat-sun.png"
+                    alt="Heatwave"
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+                <span className="text-lg font-semibold tracking-wide">
+                  Heatwave
+                </span>
+              </Link>
+            </div>
 
             {/* Center: links */}
-            <ul className="flex items-center gap-4">
+            <ul className="absolute left-1/2 flex -translate-x-1/2 items-center gap-6">
               {items.map(({ href, label, icon: Icon }) => (
                 <li key={href}>
                   <Link
@@ -149,7 +139,7 @@ export default function Navbar() {
             </ul>
 
             {/* Right: auth & profile */}
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2">
               {!loading && session ? (
                 <>
                   <button
@@ -170,6 +160,7 @@ export default function Navbar() {
                     </div>
                     <span className="hidden lg:inline-block">{userLabel}</span>
                   </button>
+
                   <button
                     onClick={() => signOut()}
                     className="rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 px-3 py-2 text-sm font-semibold text-zinc-950 shadow hover:brightness-105"
@@ -180,7 +171,7 @@ export default function Navbar() {
               ) : (
                 <button
                   onClick={() => signIn()}
-                  className="rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 px-3 py-2 text-sm font-semibold text-zinc-950 shadow hover:brightness-105"
+                  className="ml-auto rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 px-3 py-2 text-sm font-semibold text-zinc-950 shadow hover:brightness-105"
                 >
                   Sign in
                 </button>
@@ -190,7 +181,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Mobile bottom app bar (safe-area aware) */}
+      {/* Mobile bottom app bar */}
       <nav
         className="md:hidden fixed inset-x-0 bottom-0 z-40 backdrop-blur-md bg-gradient-to-r from-[#242C32]/95 via-[#244C77]/95 to-[#242C32]/95 text-white border-t border-white/10 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
         style={{ height: "var(--mobile-appbar-h)" }}
@@ -204,8 +195,7 @@ export default function Navbar() {
                 <Link
                   href={href}
                   className={cn(
-                    "flex flex-1 flex-col items-center justify-center gap-1 py-2",
-                    "text-xs",
+                    "flex flex-1 flex-col items-center justify-center gap-1 py-2 text-xs",
                     isActive(href)
                       ? "text-blue-600 dark:text-blue-400"
                       : "text-zinc-600 dark:text-zinc-300",
@@ -216,14 +206,11 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
-            {/* Profile trigger */}
+
             <li className="flex">
               <button
                 onClick={() => setProfileOpen(true)}
-                className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-1 py-2",
-                  "text-xs text-zinc-600 dark:text-zinc-300",
-                )}
+                className="flex flex-1 flex-col items-center justify-center gap-1 py-2 text-xs text-zinc-600 dark:text-zinc-300"
                 aria-label="Profile"
               >
                 <UserIcon />
@@ -234,7 +221,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Profile Tray (works on both mobile & desktop) */}
       {session && (
         <ProfileTray
           open={profileOpen}
