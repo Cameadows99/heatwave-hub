@@ -52,14 +52,14 @@ export default function ProfileTray({
       aria-hidden={!open}
       className={clsx(
         "fixed inset-0 z-50 transition pointer-events-none",
-        open ? "" : "opacity-0"
+        open ? "" : "opacity-0",
       )}
     >
       {/* Backdrop */}
       <div
         className={clsx(
           "absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity",
-          open ? "opacity-100" : "opacity-0"
+          open ? "opacity-100" : "opacity-0",
         )}
         onMouseDown={onBackdropClick}
       />
@@ -73,7 +73,7 @@ export default function ProfileTray({
           "pointer-events-auto absolute right-0 top-0 h-full w-full max-w-[720px]",
           "bg-white dark:bg-zinc-900 shadow-2xl border-l border-zinc-200 dark:border-zinc-800",
           "transition-transform duration-300 will-change-transform",
-          open ? "translate-x-0" : "translate-x-full"
+          open ? "translate-x-0" : "translate-x-full",
         )}
       >
         {/* Header */}
@@ -103,7 +103,6 @@ export default function ProfileTray({
               [
                 { id: "hours", label: "My hours" },
                 { id: "timeoff", label: "My days off" },
-                { id: "recs", label: "My recommendations" },
                 { id: "settings", label: "Settings" },
               ] as const
             ).map((t) => (
@@ -114,7 +113,7 @@ export default function ProfileTray({
                   "rounded-xl px-3 py-2 text-sm font-medium transition",
                   tab === t.id
                     ? "bg-white dark:bg-zinc-900 shadow ring-1 ring-zinc-200 dark:ring-zinc-700"
-                    : "opacity-70 hover:opacity-100"
+                    : "opacity-70 hover:opacity-100",
                 )}
               >
                 {t.label}
@@ -127,7 +126,6 @@ export default function ProfileTray({
         <section className="h-[calc(100%-132px)] overflow-y-auto px-4 sm:px-6 py-4">
           {tab === "hours" && <HoursPanel userId={userId} />}
           {tab === "timeoff" && <TimeOffPanel userId={userId} />}
-          {tab === "recs" && <RecsPanel userId={userId} isAdmin={isAdmin} />}
           {tab === "settings" && <SettingsPanel />}
         </section>
       </aside>
@@ -301,7 +299,7 @@ function TimeOffPanel({ userId }: { userId: string }) {
                       "text-xs font-medium",
                       r.status === "APPROVED" && "text-green-600",
                       r.status === "PENDING" && "text-amber-600",
-                      r.status === "DENIED" && "text-red-600"
+                      r.status === "DENIED" && "text-red-600",
                     )}
                   >
                     {r.status}
@@ -499,7 +497,7 @@ function formatRange(startISO: string, endISO: string) {
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
   const sStr = s.toLocaleDateString(
     undefined,
-    sameYear ? opts : { ...opts, year: "numeric" }
+    sameYear ? opts : { ...opts, year: "numeric" },
   );
   const eStr = e.toLocaleDateString(undefined, { ...opts, year: "numeric" });
   return `${sStr} — ${eStr}`;

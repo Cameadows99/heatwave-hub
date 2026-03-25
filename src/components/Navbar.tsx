@@ -88,11 +88,11 @@ export default function Navbar() {
   // Derive user display
   const userLabel = useMemo(
     () => session?.user?.name ?? session?.user?.email ?? "You",
-    [session]
+    [session],
   );
   const isAdmin = useMemo(
     () => session?.user?.role === "ADMIN" || session?.user?.role === "MANAGER",
-    [session]
+    [session],
   );
 
   // Shared nav items
@@ -100,7 +100,6 @@ export default function Navbar() {
     { href: "/home", label: "Home", icon: HomeIcon },
     { href: "/calendar", label: "Calendar", icon: CalendarIcon },
     { href: "/order-requests", label: "Orders", icon: BoxIcon },
-    { href: "/work-orders", label: "Work", icon: HammerIcon },
   ];
 
   return (
@@ -109,7 +108,7 @@ export default function Navbar() {
       <header
         className={cn(
           "hidden md:block sticky top-0 z-40",
-          "bg-gradient-to-r from-[#242C32] via-[#244C77] to-[#242C32] text-white shadow-lg"
+          "bg-gradient-to-r from-[#242C32] via-[#244C77] to-[#242C32] text-white shadow-lg",
         )}
       >
         <div className="mx-auto max-w-6xl px-4">
@@ -139,7 +138,7 @@ export default function Navbar() {
                     className={cn(
                       "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm",
                       "transition hover:bg-white/10",
-                      isActive(href) && "bg-white/15 ring-1 ring-white/20"
+                      isActive(href) && "bg-white/15 ring-1 ring-white/20",
                     )}
                   >
                     <Icon active={isActive(href)} />
@@ -157,7 +156,7 @@ export default function Navbar() {
                     onClick={() => setProfileOpen(true)}
                     className={cn(
                       "group inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm",
-                      "bg-white/10 hover:bg-white/15 ring-1 ring-white/20"
+                      "bg-white/10 hover:bg-white/15 ring-1 ring-white/20",
                     )}
                     aria-label="Open profile"
                   >
@@ -209,7 +208,7 @@ export default function Navbar() {
                     "text-xs",
                     isActive(href)
                       ? "text-blue-600 dark:text-blue-400"
-                      : "text-zinc-600 dark:text-zinc-300"
+                      : "text-zinc-600 dark:text-zinc-300",
                   )}
                 >
                   <Icon active={isActive(href)} />
@@ -223,7 +222,7 @@ export default function Navbar() {
                 onClick={() => setProfileOpen(true)}
                 className={cn(
                   "flex flex-1 flex-col items-center justify-center gap-1 py-2",
-                  "text-xs text-zinc-600 dark:text-zinc-300"
+                  "text-xs text-zinc-600 dark:text-zinc-300",
                 )}
                 aria-label="Profile"
               >

@@ -64,7 +64,7 @@ export default function TimeOffCalendar({
   // quick set for "hasContentForDate"
   const coverSet = useMemo(
     () => new Set(Object.keys(expandedDates)),
-    [expandedDates]
+    [expandedDates],
   );
 
   // Filtered per-day list
@@ -90,7 +90,7 @@ export default function TimeOffCalendar({
         console.error("Failed to fetch time off:", e);
       }
     })();
-  }, []);
+  }, [selectedDate]);
 
   // --- UI: filter buttons below the calendar ---
   const FilterButtons = (
@@ -151,7 +151,7 @@ export default function TimeOffCalendar({
                     <div key={r.id} className="truncate">
                       <div
                         className={`font-semibold truncate ${colorFor(
-                          r.status
+                          r.status,
                         )}`}
                       >
                         {r.user?.name ?? "Request"}
