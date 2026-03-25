@@ -61,7 +61,7 @@ export default function BaseCalendar({
         <div className="sm:rounded-2xl sm:border sm:border-white/40 sm:bg-white/70 sm:backdrop-blur-md sm:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] px-2 sm:px-5 py-3 sm:py-4">
           {/* Toggle / Header addon (phone-only) — slightly stretched on phone */}
           {headerAddon && (
-            <div className="sm:hidden mb-5 flex justify-center">
+            <div className="sm:hidden mb-7 flex justify-center">
               <div className="origin-top scale-[1.10] sm:scale-100">
                 {headerAddon}
               </div>
@@ -69,7 +69,7 @@ export default function BaseCalendar({
           )}
 
           {/* Header */}
-          <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4"></header>
+          <header className="flex flex-col mt-7 sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4"></header>
           <div className="mb-2 sm:mb-5 flex items-center justify-between">
             <button
               onClick={goPrev}
