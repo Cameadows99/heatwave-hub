@@ -98,7 +98,7 @@ export default function ProfileTray({
 
         {/* Tabs */}
         <nav className="px-2 sm:px-4 mt-2">
-          <div className="grid grid-cols-4 gap-1 rounded-2xl bg-zinc-100 dark:bg-zinc-800 p-1">
+          <div className="grid grid-cols-3 gap-1 rounded-2xl bg-zinc-100 dark:bg-zinc-800 p-1">
             {(
               [
                 { id: "hours", label: "My hours" },
