@@ -189,7 +189,7 @@ export default function Navbar() {
         aria-label="Primary"
       >
         <div className="mx-auto h-full max-w-screen-sm">
-          <ul className="grid h-full grid-cols-5">
+          <ul className="grid h-full grid-cols-4">
             {items.map(({ href, label, icon: Icon }) => (
               <li key={href} className="flex">
                 <Link

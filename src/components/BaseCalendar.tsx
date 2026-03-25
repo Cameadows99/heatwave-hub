@@ -59,6 +59,15 @@ export default function BaseCalendar({
       <div className="mx-auto max-w-[100vw] sm:max-w-[clamp(420px,80vw,920px)] px-1 sm:px-4">
         {/* Card chrome only on ≥sm */}
         <div className="sm:rounded-2xl sm:border sm:border-white/40 sm:bg-white/70 sm:backdrop-blur-md sm:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] px-2 sm:px-5 py-3 sm:py-4">
+          {/* Toggle / Header addon (phone-only) — slightly stretched on phone */}
+          {headerAddon && (
+            <div className="sm:hidden mb-5 flex justify-center">
+              <div className="origin-top scale-[1.10] sm:scale-100">
+                {headerAddon}
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4"></header>
           <div className="mb-2 sm:mb-5 flex items-center justify-between">
@@ -80,15 +89,6 @@ export default function BaseCalendar({
               →
             </button>
           </div>
-
-          {/* Toggle / Header addon (phone-only) — slightly stretched on phone */}
-          {headerAddon && (
-            <div className="sm:hidden mb-2 flex justify-center">
-              <div className="origin-top scale-[1.10] sm:scale-100">
-                {headerAddon}
-              </div>
-            </div>
-          )}
 
           {/* Days of Week */}
           <div className="grid grid-cols-7 text-center text-[12px] sm:text-xs font-semibold text-sky-700 mb-1.5 sm:mb-2">
@@ -140,7 +140,7 @@ export default function BaseCalendar({
                               height={28}
                               className={cn(
                                 hasContent ? "opacity-40" : "opacity-70",
-                                "sm:w-[34px] sm:h-[34px]"
+                                "sm:w-[34px] sm:h-[34px]",
                               )}
                             />
                           </div>
